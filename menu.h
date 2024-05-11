@@ -958,6 +958,7 @@ public:
 	Checkbox      enemy_radar;
 	// col2.
 	MultiDropdown removals;
+	MultiDropdown recoil_adjustment;
 	Checkbox      fov_scoped;
 	Checkbox      spectators;
 	Checkbox      force_xhair;
@@ -1072,9 +1073,12 @@ public:
 		RegisterElement(&manual_anti_aim_col, 1);
 
 		antiaim_arrows.setup(XOR("Draw anti-aim angles"), XOR("antiaim_arrows"));
-		RegisterElement(&antiaim_arrows);
+		RegisterElement(&antiaim_arrows, 1);
 
-		removals.setup(XOR("Removals"), XOR("removals"), { XOR("Recoil"), XOR("Smoke effects"), XOR("Fog"), XOR("Flashbang effects"), XOR("Scope overlay") });
+		recoil_adjustment.setup(XOR("Visual recoil adjustment"), XOR("recoil_adjustment"), { XOR("Remove shake"), XOR("Remove all")});
+		RegisterElement(&recoil_adjustment, 1);
+
+		removals.setup(XOR("Removals"), XOR("removals"), { XOR("Smoke effects"), XOR("Fog"), XOR("Flashbang effects"), XOR("Scope overlay") });
 		RegisterElement(&removals, 1);
 
 		remove_skybox.setup(XOR("Remove skybox"), XOR("remove_skybox"));

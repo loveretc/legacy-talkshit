@@ -110,8 +110,6 @@ void draw_server_hitboxes(int index)
 	}
 }
 
-
-
 float bloop = 1.f;
 
 static float last_upd = 0.f;
@@ -123,6 +121,8 @@ void Hooks::FrameStageNotify(Stage_t stage) {
 
 	// damn son.
 	g_cl.m_local = g_csgo.m_entlist->GetClientEntity< Player* >(g_csgo.m_engine->GetLocalPlayer());
+	static ang_t aimPunch;
+	static ang_t viewPunch;
 
 	if (stage == FRAME_RENDER_START) {
 
@@ -153,6 +153,16 @@ void Hooks::FrameStageNotify(Stage_t stage) {
 				continue;
 
 			disable_interpolation(player);
+		}
+
+		aimPunch = g_cl.m_local->m_aimPunchAngle();
+		viewPunch = g_cl.m_local->m_viewPunchAngle();
+
+		if (g_menu.main.visuals.recoil_adjustment.get(0))
+			viewPunch = g_cl.m_local->m_viewPunchAngle() = ang_t{ };
+
+		if (g_menu.main.visuals.recoil_adjustment.get(1)) {
+			g_cl.m_local->m_aimPunchAngle() = ang_t{ };
 		}
 	}
 
@@ -290,5 +300,10 @@ void Hooks::FrameStageNotify(Stage_t stage) {
 			AimPlayer* data = &g_aimbot.m_players[i - 1];
 			data->on_data_update(player);
 		}
+	}
+
+	else if (stage == FRAME_RENDER_END && g_csgo.m_engine->IsConnected() && g_csgo.m_engine->IsInGame()) {
+		g_cl.m_local->m_aimPunchAngle() = aimPunch;
+		g_cl.m_local->m_viewPunchAngle() = viewPunch;
 	}
 }

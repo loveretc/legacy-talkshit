@@ -84,6 +84,7 @@ public:
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flFlashBangTime;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_angEyeAngles;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_aimPunchAngle;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > pl;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_viewPunchAngle;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_aimPunchAngleVel;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_vecViewOffset;
@@ -206,6 +207,7 @@ public:
         INIT_XOREDNETVAR( m_iObserverMode,              HASH( "DT_BasePlayer" ),           HASH( "m_iObserverMode" ) );
         INIT_XOREDNETVAR( m_ArmorValue,                 HASH( "DT_CSPlayer" ),             HASH( "m_ArmorValue" ) );
         INIT_XOREDNETVAR( m_flMaxspeed,                 HASH( "DT_BasePlayer" ),           HASH( "m_flMaxspeed" ) );
+        INIT_XOREDNETVAR( pl,                           HASH("DT_BasePlayer"),             HASH( "pl"));
         INIT_XOREDNETVAR( m_surfaceFriction,            HASH( "C_BasePlayer" ),            HASH( "m_surfaceFriction" ) );
         INIT_XOREDNETVAR( m_angEyeAngles,               HASH( "DT_CSPlayer" ),             HASH( "m_angEyeAngles" ) );
         INIT_XOREDNETVAR( m_aimPunchAngle,              HASH( "DT_CSPlayer" ),             HASH( "m_aimPunchAngle" ) );

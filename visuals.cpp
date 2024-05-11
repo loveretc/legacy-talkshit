@@ -252,7 +252,7 @@ void Visuals::NoSmoke() {
 	if (!smoke4)
 		smoke4 = g_csgo.m_material_system->FindMaterial(XOR("particle/vistasmokev1/vistasmokev1_emods_impactdust"), XOR("Other textures"));
 
-	if (g_menu.main.visuals.removals.get(1)) {
+	if (g_menu.main.visuals.removals.get(0)) {
 		if (!smoke1->GetFlag(MATERIAL_VAR_NO_DRAW))
 			smoke1->SetFlag(MATERIAL_VAR_NO_DRAW, true);
 
@@ -298,7 +298,7 @@ void Visuals::think( ) {
 	if( !g_cl.m_local )
 		return;
 
-	if (g_menu.main.visuals.removals.get(4)
+	if (g_menu.main.visuals.removals.get(3)
 		&& g_cl.m_local->alive( )
 		&& g_cl.m_local->GetActiveWeapon( )
 		&& g_cl.m_local->GetActiveWeapon( )->GetWpnData( )->m_weapon_type == CSWeaponType::WEAPONTYPE_SNIPER_RIFLE
@@ -2412,7 +2412,7 @@ void Visuals::IndicateAngles() {
 
 		if (render::WorldToScreen(real_pos, draw_tmp))
 		{
-			render::line(tmp.x, tmp.y, draw_tmp.x, draw_tmp.y, { 222, 44, 44 });
+			render::line(tmp.x, tmp.y, draw_tmp.x, draw_tmp.y, colors::transparent_red );
 			render::esp_small.string(draw_tmp.x, draw_tmp.y, { 222, 44, 44 }, "FAKE", render::ALIGN_LEFT);
 		}
 
@@ -2422,7 +2422,7 @@ void Visuals::IndicateAngles() {
 
 			if (render::WorldToScreen(fake_pos, draw_tmp))
 			{
-				render::line(tmp.x, tmp.y, draw_tmp.x, draw_tmp.y, { 55, 215, 90, 255 });
+				render::line(tmp.x, tmp.y, draw_tmp.x, draw_tmp.y, { colors::transparent_green });
 				render::esp_small.string(draw_tmp.x, draw_tmp.y, { 55, 215, 90, 255 }, "REAL", render::ALIGN_LEFT);
 			}
 		}
@@ -2435,7 +2435,7 @@ void Visuals::IndicateAngles() {
 
 			if (render::WorldToScreen(lby_pos, draw_tmp))
 			{
-				render::line(tmp.x, tmp.y, draw_tmp.x, draw_tmp.y, { 72, 100 , 232, 255 });
+				render::line(tmp.x, tmp.y, draw_tmp.x, draw_tmp.y, { colors::light_blue });
 				render::esp_small.string(draw_tmp.x, draw_tmp.y, { 72, 100, 232, 255 }, "LBY", render::ALIGN_LEFT);
 			}
 		}
