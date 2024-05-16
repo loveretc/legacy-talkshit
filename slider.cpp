@@ -170,12 +170,15 @@ void Slider::think( ) {
 	// adjust value depending on precision
 	if (g_input.IsCursorInRect(Rect{ p.x - buttonSpacingminus - buttonSize, p.y + m_offset, buttonSize, buttonSize })) {
 		if (g_input.GetKeyPress(VK_LBUTTON)) {
-			if (m_precision == 2)
+			/*if (m_precision == 2)
 				m_value -= 0.01f;
 			else if (m_precision == 1)
 				m_value -= 0.1f;
 			else
-				m_value -= 1;
+				m_value -= 1;*/
+
+			m_value -= m_step;
+
 			math::clamp(m_value, m_min, m_max);
 			if (m_callback)
 				m_callback();
@@ -185,12 +188,15 @@ void Slider::think( ) {
 	// + button
 	else if (g_input.IsCursorInRect(Rect{ p.x + m_w + buttonSpacingplus, p.y + m_offset, buttonSize, buttonSize })) {
 		if (g_input.GetKeyPress(VK_LBUTTON)) {
-			if (m_precision == 2)
+			/*if (m_precision == 2)
 				m_value += 0.01f;
 			else if (m_precision == 1)
 				m_value += 0.1f;
 			else
-				m_value += 1;
+				m_value += 1;*/
+
+			m_value += m_step;
+
 			math::clamp(m_value, m_min, m_max);
 			if (m_callback)
 				m_callback();
