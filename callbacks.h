@@ -109,7 +109,7 @@ namespace callbacks {
 	bool IsFakeAntiAimJitter( );
 	
 	bool IsFluctuateOn();
-
+	bool VisualizeFLon();
 	bool landon();
 
 	bool IsConfig1( );

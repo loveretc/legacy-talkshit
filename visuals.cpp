@@ -775,12 +775,12 @@ void Visuals::DrawProjectile(Weapon* ent) {
 		warning_icon = 0;
 	}
 
-	// Red channel for grenade warning
-	if (dist <= 3) {
+	// Red channel for grenade warning (only do it if we are alive)
+	if (dist <= 3 && g_cl.m_processing) {
 		// apply a pulse effect when you are near the molotov
 		warning_red = static_cast<int>(150 + pulse_value * 30); // range: [120, 180]
 	}
-	else if (dist > 3 && dist <= 8) {
+	else if (dist > 3 && dist <= 8 && g_cl.m_processing) {
 		warning_red = 120 - ((120 / (8 - 3)) * (dist - 3));
 	}
 	else {
@@ -2413,7 +2413,7 @@ void Visuals::IndicateAngles() {
 		if (render::WorldToScreen(real_pos, draw_tmp))
 		{
 			render::line(tmp.x, tmp.y, draw_tmp.x, draw_tmp.y, colors::transparent_red );
-			render::esp_small.string(draw_tmp.x, draw_tmp.y, { 222, 44, 44 }, "FAKE", render::ALIGN_LEFT);
+			render::esp_small.string(draw_tmp.x, draw_tmp.y, { colors::transparent_red }, "FAKE", render::ALIGN_LEFT);
 		}
 
 		if (g_menu.main.antiaim.fake_yaw.get())
@@ -2423,7 +2423,7 @@ void Visuals::IndicateAngles() {
 			if (render::WorldToScreen(fake_pos, draw_tmp))
 			{
 				render::line(tmp.x, tmp.y, draw_tmp.x, draw_tmp.y, { colors::transparent_green });
-				render::esp_small.string(draw_tmp.x, draw_tmp.y, { 55, 215, 90, 255 }, "REAL", render::ALIGN_LEFT);
+				render::esp_small.string(draw_tmp.x, draw_tmp.y, { colors::transparent_green }, "REAL", render::ALIGN_LEFT);
 			}
 		}
 
@@ -2436,7 +2436,7 @@ void Visuals::IndicateAngles() {
 			if (render::WorldToScreen(lby_pos, draw_tmp))
 			{
 				render::line(tmp.x, tmp.y, draw_tmp.x, draw_tmp.y, { colors::light_blue });
-				render::esp_small.string(draw_tmp.x, draw_tmp.y, { 72, 100, 232, 255 }, "LBY", render::ALIGN_LEFT);
+				render::esp_small.string(draw_tmp.x, draw_tmp.y, { colors::light_blue }, "LBY", render::ALIGN_LEFT);
 			}
 		}
 	}

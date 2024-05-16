@@ -501,6 +501,10 @@ bool callbacks::IsFluctuateOn() {
 	return g_menu.main.antiaim.fakelag_fluct.get();
 }
 
+bool callbacks::VisualizeFLon() {
+	return g_menu.main.antiaim.fakelag_chams.get();
+}
+
 bool callbacks::landon() {
 	return g_menu.main.antiaim.allow_land.get();
 }

@@ -96,6 +96,7 @@ void Chams::init() {
 	m_materials.push_back(g_csgo.m_material_system->FindMaterial(XOR("models/inventory_items/trophy_majors/gloss"), XOR("Model textures")));
 	m_materials.push_back(g_csgo.m_material_system->FindMaterial(XOR("glow"), nullptr));
 	m_materials.push_back(g_csgo.m_material_system->FindMaterial(XOR("dev/glow_armsrace"), XOR("Model textures")));
+	m_materials.push_back(g_csgo.m_material_system->FindMaterial(XOR("models\\inventory_items\\dogtags\\dogtags_outline"), XOR("Model textures")));
 
 	for (int i = 0; i < m_materials.size(); i++) {
 		m_materials[i]->IncrementReferenceCount();
@@ -535,7 +536,6 @@ void Chams::RenderPlayer(Player* player) {
 		SetupMaterial(m_materials[g_menu.main.players.chams_enemy_mat.get()], g_menu.main.players.chams_enemy_vis.get(), false);
 		player->DrawModel();
 	}
-
 	m_running = false;
 }
 

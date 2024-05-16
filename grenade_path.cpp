@@ -168,10 +168,10 @@ bool c_grenade_prediction::data_t::draw() const
 
     // Red channel for grenade warning
     if ((m_index == HEGRENADE || m_index == MOLOTOV || m_index == FIREBOMB) && dist <= 20) {
-        if (dist <= 12) {
+        if (dist <= 12 && g_cl.m_processing) {
             warning_red = 150;
         }
-        else if (dist > 12 && dist <= 20) {
+        else if (dist > 12 && dist <= 20 && g_cl.m_processing) {
             warning_red = 120 - ((120 / (20 - 12)) * (dist - 12));
         }
         else {

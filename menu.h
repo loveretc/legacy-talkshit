@@ -501,6 +501,10 @@ public:
 		fakelag_chams.setup(XOR("Visualize fakelag"), XOR("fakelag_chams"));
 		RegisterElement(&fakelag_chams, 1);
 
+		fakelag_clr.setup(XOR("Color"), XOR("fakelag_clr"), colors::burgundy);
+		fakelag_clr.AddShowCallback(callbacks::VisualizeFLon);
+		RegisterElement(&fakelag_clr, 1);
+
 		fakelag_silent_aim.setup(XOR("Force silent aim"), XOR("fakelag_silent_aim"), true, false, false);
 		RegisterElement(&fakelag_silent_aim, 1);
 
@@ -1114,63 +1118,63 @@ public:
 		RegisterElement(&disableteam, 1);
 
 		impact_beams.setup(XOR("Bullet tracers"), XOR("impact_beams"));
-		RegisterElement(&impact_beams, 1);
+		RegisterElement(&impact_beams);
 
 		local_or_enemy_impacts.setup(XOR("Type"), XOR("local_or_enemy_impacts"), { XOR("Local player"), XOR("Enemy") }, false);
 		local_or_enemy_impacts.AddShowCallback(callbacks::local_on_impacts2);
-		RegisterElement(&local_or_enemy_impacts, 1);
+		RegisterElement(&local_or_enemy_impacts);
 
 		impact_beams2.setup(XOR("Enabled"), XOR("impact_beams2"));
 		impact_beams2.AddShowCallback(callbacks::local_on_impacts2);
 		impact_beams2.AddShowCallback(callbacks::local_on);
-		RegisterElement(&impact_beams2, 1);
+		RegisterElement(&impact_beams2);
 
 		impact_beams3.setup(XOR("Enabled"), XOR("impact_beams3"));
 		impact_beams3.AddShowCallback(callbacks::local_on_impacts2);
 		impact_beams3.AddShowCallback(callbacks::enemy_on);
-		RegisterElement(&impact_beams3, 1);
+		RegisterElement(&impact_beams3);
 
 		local_material_type.setup(XOR(""), XOR("local_material_type"), { XOR("Purple laser"), XOR("Phys beam") }, false);
 		local_material_type.AddShowCallback(callbacks::local_on_impacts);
 		local_material_type.AddShowCallback(callbacks::local_on);
-		RegisterElement(&local_material_type, 1);
+		RegisterElement(&local_material_type);
 
 		impact_beams_color.setup(XOR("Color"), XOR("impact_beams_color"), colors::light_blue);
 		impact_beams_color.AddShowCallback(callbacks::local_on_impacts);
 		impact_beams_color.AddShowCallback(callbacks::local_on);
-		RegisterElement(&impact_beams_color, 1);
+		RegisterElement(&impact_beams_color);
 
 		impact_beams_time.setup(XOR("Lifetime"), XOR("impact_beams_time"), 1.f, 10.f, true, 0, 1.f, 1.f, XOR(L"s")); \
 			impact_beams_time.AddShowCallback(callbacks::local_on_impacts);
 		impact_beams_time.AddShowCallback(callbacks::local_on);
-		RegisterElement(&impact_beams_time, 1);
+		RegisterElement(&impact_beams_time);
 
 		impact_beams_speed.setup(XOR("Speed"), XOR("impact_beams_speed"), 0.0f, 1.5, true, 1, 0.9f, 0.1f, XOR(L"s"));
 		impact_beams_speed.AddShowCallback(callbacks::local_on_impacts);
 		impact_beams_speed.AddShowCallback(callbacks::local_on);
 		impact_beams_speed.AddShowCallback(callbacks::local_on_laser);
-		RegisterElement(&impact_beams_speed, 1);
+		RegisterElement(&impact_beams_speed);
 
 		enemy_material_type.setup(XOR(""), XOR("enemy_material_type"), { XOR("Purple laser"), XOR("Phys beam") }, false);
 		enemy_material_type.AddShowCallback(callbacks::enemy_on_impacts);
 		enemy_material_type.AddShowCallback(callbacks::enemy_on);
-		RegisterElement(&enemy_material_type, 1);
+		RegisterElement(&enemy_material_type);
 
 		impact_beams_color2.setup(XOR("Color"), XOR("impact_beams_color2"), { 151, 130, 255 });
 		impact_beams_color2.AddShowCallback(callbacks::enemy_on_impacts);
 		impact_beams_color2.AddShowCallback(callbacks::enemy_on);
-		RegisterElement(&impact_beams_color2, 1);
+		RegisterElement(&impact_beams_color2);
 
 		impact_beams_time2.setup(XOR("Lifetime"), XOR("impact_beams_time"), 1.f, 10.f, true, 0, 4.f, 1.f, XOR(L"s"));
 		impact_beams_time2.AddShowCallback(callbacks::enemy_on_impacts);
 		impact_beams_time2.AddShowCallback(callbacks::enemy_on);
-		RegisterElement(&impact_beams_time2, 1);
+		RegisterElement(&impact_beams_time2);
 
 		impact_beams_speed2.setup(XOR("Speed"), XOR("impact_beams_speed2"), 0.0f, 1.5, true, 1, 0.9f, 0.1f, XOR(L"s"));
 		impact_beams_speed2.AddShowCallback(callbacks::enemy_on_impacts);
 		impact_beams_speed2.AddShowCallback(callbacks::enemy_on);
 		impact_beams_speed2.AddShowCallback(callbacks::enemy_on_laser);
-		RegisterElement(&impact_beams_speed2, 1);
+		RegisterElement(&impact_beams_speed2);
 
 		bullet_impacts.setup(XOR("Bullet impacts"), XOR("bullet_impacts"));
 		RegisterElement(&bullet_impacts, 1);
