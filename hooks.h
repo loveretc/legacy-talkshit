@@ -254,8 +254,11 @@ public:
 	RecvVarProxy_t m_AbsYaw_original;
 	RecvVarProxy_t m_SimTime_original;
 
-	DWORD boldVerdana;
-	DWORD undefeated;
+	// embedded fonts we install into the process font table.
+	// note; these have to be handed back before we unmap, the font data they were built
+	//       from is a byte array inside this module.
+	HANDLE m_font_bold_verdana;
+	HANDLE m_font_undefeated;
 };
 
 // note - dex; these are defined in player.cpp.
@@ -267,6 +270,11 @@ public:
     __forceinline void init( ) {
         g_csgo.AddListenerEntity( this );
     }
+
+    // function: takes us back out of the games listener list.
+    // returns false if we could not do it safely, in which case the caller must not
+    // unload; our vtable lives in this module.
+    bool remove( );
 };
 
 

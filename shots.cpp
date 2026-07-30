@@ -6,10 +6,29 @@ void Shots::OnShotFire(Player* target, float damage, int bullets, LagRecord* rec
 	// we are not shooting manually.
 	// and this is the first bullet, only do this once.
 	if (target && record) {
+
+		// increment total shots on this player.
+		AimPlayer* data = &g_aimbot.m_players[target->index() - 1];
+
+		// grab the owning shared_ptr of the record we aimed at.
+		// we keep it alive until this shot has been handled, the deque
+		// it lives in gets trimmed every single tick.
+		std::shared_ptr< LagRecord > owned;
+		for (auto& r : data->m_records) {
+			if (r.get() == record) {
+				owned = r;
+				break;
+			}
+		}
+
+		// record is already gone, nothing we can learn from this shot.
+		if (!owned)
+			return;
+
 		// setup new shot data.
 		ShotRecord shot;
 		shot.m_target = target;
-		shot.m_record = record;
+		shot.m_record = owned;
 		shot.m_time = g_csgo.m_globals->m_realtime;
 		shot.m_lat = g_cl.m_latency;
 		shot.m_damage = damage;
@@ -24,13 +43,10 @@ void Shots::OnShotFire(Player* target, float damage, int bullets, LagRecord* rec
 		shot.m_hitgroup = hitgroup;
 		shot.m_had_pred_error = g_csgo.m_globals->m_tick_count - g_cl.m_cmd->m_tick < -1;
 
-		// increment total shots on this player.
-		AimPlayer* data = &g_aimbot.m_players[target->index() - 1];
 		player_info_t info;
 		bool success = g_csgo.m_engine->GetPlayerInfo(target->index(), &info);
 
-		if (data)
-			++data->m_shots;
+		++data->m_shots;
 
 		bool broke_lc = shot.m_record->broke_lc() || shot.m_record->m_sim_time <= shot.m_record->m_old_sim_time;
 
@@ -259,6 +275,14 @@ void Shots::OnHurt(IGameEvent* evt) {
 	// this shot was matched.
 	shot->m_invalid_record = shot->m_record->valid();
 	shot->m_hurt = true;
+
+	// tell the resolver which delta actually landed on this player so it can
+	// prefer that side instead of restarting its brute force from zero.
+	if (shot->m_record) {
+		AimPlayer* data = &g_aimbot.m_players[victim - 1];
+		data->on_resolver_hit(shot->m_record->m_mode,
+			math::AngleDiff(shot->m_record->m_eye_angles.y, shot->m_record->m_body));
+	}
 }
 
 void Shots::OnWeaponFire(IGameEvent* evt) {
@@ -319,30 +343,26 @@ void Shots::OnShotMiss(ShotRecord& shot) {
 	if (!target)
 		return;
 
-	// not gonna bother anymore.
-	if (g_menu.main.aimbot.debuglog.get()) {
-		if (!target->alive()) {
-			//if( g_menu.main.misc.notifications.get( 6 ) )
+	// the target died in the meantime, we can't attribute this miss to anything.
+	if (!target->alive()) {
+		if (g_menu.main.aimbot.debuglog.get())
 			g_cl.print("missed shot due to player death\n");
-			return;
-		}
+		return;
 	}
 
 	AimPlayer* data = &g_aimbot.m_players[target->index() - 1];
-	if (!data)
-		return;
 
-	// this record was deleted already.
-	if (g_menu.main.aimbot.debuglog.get()) {
-		if (!shot.m_record->m_bones) {
+	// this record never got a matrix built for it, tracing against it is meaningless.
+	if (!shot.m_record->m_setup) {
+		if (g_menu.main.aimbot.debuglog.get())
 			g_notify.add(XOR("missed shot due to invalid record\n"), Color(255, 0, 0, 255));
-			return;
-		}
+		return;
 	}
 
 	// we are going to alter this player.
 	// store all his og data.
-	g_aimbot.m_backup[ target->index( ) ].store(target);
+	// note; player indices are 1 based, our arrays are not.
+	g_aimbot.m_backup[ target->index( ) - 1 ].store(target);
 
 	// write historical matrix of the time that we shot
 	// into the games bone cache, so we can trace against it.
@@ -366,75 +386,85 @@ void Shots::OnShotMiss(ShotRecord& shot) {
 	// intersect our historical matrix with the path the shot took.
 	g_csgo.m_engine_trace->ClipRayToEntity(Ray(start, end), CS_MASK_SHOOT | CONTENTS_HITBOX, target, &trace);
 
-		// we did not hit jackshit, or someone else.
-		if (trace.m_entity == target || g_menu.main.aimbot.nospread.get()) {
-			size_t mode = shot.m_record->m_mode;
-			int curr_mode_miss = 0;
-			if (g_menu.main.aimbot.debuglog.get()) {
+	// the path the bullet actually took went through the matrix we aimed at.
+	// spread was not the culprit here, the player simply was not where we thought he was,
+	// so this is on the resolver / on our animations.
+	if (trace.m_entity == target || g_menu.main.aimbot.nospread.get()) {
+		const size_t mode = shot.m_record->m_mode;
+		int curr_mode_miss = 0;
 
-				// if we miss a shot on body update.
-				// we can chose to stop shooting at them.
-				if (mode == Resolver::Modes::RESOLVE_DATA) {
-					++data->m_stand_move_idx;
-					curr_mode_miss = data->m_stand_move_idx;
-				}
-				else if (mode == Resolver::Modes::RESOLVE_NO_DATA) {
-					++data->m_stand_no_move_idx;
-					curr_mode_miss = data->m_stand_no_move_idx;
-				}
-				else if (mode == Resolver::Modes::RESOLVE_LBY) {
-					++data->m_body_idx;
-					curr_mode_miss = data->m_body_idx;
-				}
-				else if (mode == Resolver::Modes::RESOLVE_AIR) {
-					++data->m_air_idx;
-					curr_mode_miss = data->m_air_idx;
-				}
-				else if (mode == Resolver::Modes::RESOLVE_LBY_PRED) {
+		// NOTE: this state machine drives the entire brute force, it has to run
+		//       no matter what the debug logging option is set to.
+		//       it used to live inside the 'debuglog' branch, which meant the
+		//       resolver never advanced a single index unless you had logs on.
 
-					// increment lby pred miss
-					++data->m_body_pred_idx;
-					curr_mode_miss = data->m_body_pred_idx;
-
-					// if we mispredict it means hes not at his lby
-					// in that case, blacklist lby 
-					++data->m_body_idx;
-				}
-
-				// we will not shoot this shitty mode twice
-				if (shot.m_record->m_resolver_mode == "M:INVERTFS")
-					data->m_missed_invertfs = true;
-
-				if (std::abs(math::AngleDiff(shot.m_record->m_back, shot.m_record->m_eye_angles.y)) <= 10.f)
-					data->m_missed_back = true;
-
-				// if mode isnt lby nor walk
-				if (mode != Resolver::Modes::RESOLVE_LBY
-					&& mode != Resolver::Modes::RESOLVE_WALK) {
-
-					const float diff = std::abs(math::AngleDiff(shot.m_record->m_body, shot.m_record->m_eye_angles.y));
-
-					// but delta is really close
-					// then lets pretend we missed it
-					// so we dont shoot the same angle twice
-					if (diff <= 10.f)
-						++data->m_body_idx;
-				}
-
-				++data->m_missed_shots;
-
-				if (mode == Resolver::Modes::RESOLVE_WALK)
-					g_notify.add(XOR("Missed shot due to lag compensation\n"));
-				else if (mode != Resolver::Modes::RESOLVE_NONE)
-					g_notify.add(XOR("Missed shot due to fake angles\n"));
-			}
+		// if we miss a shot on body update.
+		// we can chose to stop shooting at them.
+		if (mode == Resolver::Modes::RESOLVE_DATA) {
+			++data->m_stand_move_idx;
+			curr_mode_miss = data->m_stand_move_idx;
 		}
-		else
-			if (g_menu.main.aimbot.log_spread.get())
-				g_notify.add(XOR("Missed shot due to spread\n"));
+		else if (mode == Resolver::Modes::RESOLVE_NO_DATA) {
+			++data->m_stand_no_move_idx;
+			curr_mode_miss = data->m_stand_no_move_idx;
+		}
+		else if (mode == Resolver::Modes::RESOLVE_LBY) {
+			++data->m_body_idx;
+			curr_mode_miss = data->m_body_idx;
+		}
+		else if (mode == Resolver::Modes::RESOLVE_AIR) {
+			++data->m_air_idx;
+			curr_mode_miss = data->m_air_idx;
+		}
+		else if (mode == Resolver::Modes::RESOLVE_LBY_PRED) {
+
+			// increment lby pred miss
+			++data->m_body_pred_idx;
+			curr_mode_miss = data->m_body_pred_idx;
+
+			// if we mispredict it means hes not at his lby
+			// in that case, blacklist lby
+			++data->m_body_idx;
+		}
+
+		// we will not shoot this shitty mode twice
+		if (shot.m_record->m_resolver_mode == XOR("M:INVERTFS"))
+			data->m_missed_invertfs = true;
+
+		if (std::abs(math::AngleDiff(shot.m_record->m_back, shot.m_record->m_eye_angles.y)) <= 10.f)
+			data->m_missed_back = true;
+
+		// if mode isnt lby nor walk
+		if (mode != Resolver::Modes::RESOLVE_LBY
+			&& mode != Resolver::Modes::RESOLVE_WALK) {
+
+			const float diff = std::abs(math::AngleDiff(shot.m_record->m_body, shot.m_record->m_eye_angles.y));
+
+			// but delta is really close
+			// then lets pretend we missed it
+			// so we dont shoot the same angle twice
+			if (diff <= 10.f)
+				++data->m_body_idx;
+		}
+
+		++data->m_missed_shots;
+
+		// a miss invalidates whatever side we had locked in for this player.
+		data->on_resolver_miss(mode, shot.m_record->m_eye_angles.y - shot.m_record->m_body);
+
+		if (g_menu.main.aimbot.debuglog.get()) {
+			if (mode == Resolver::Modes::RESOLVE_WALK)
+				g_notify.add(XOR("Missed shot due to lag compensation\n"));
+			else if (mode != Resolver::Modes::RESOLVE_NONE)
+				g_notify.add(tfm::format(XOR("Missed shot due to fake angles (%s, try %i)\n"),
+					shot.m_record->m_resolver_mode, curr_mode_miss));
+		}
+	}
+	else if (g_menu.main.aimbot.log_spread.get())
+		g_notify.add(XOR("Missed shot due to spread\n"));
 
 	// restore player to his original state.
-	g_aimbot.m_backup[ target->index( ) ].restore(target);
+	g_aimbot.m_backup[ target->index( ) - 1 ].restore(target);
 }
 
 void Shots::Think() {

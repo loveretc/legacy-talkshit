@@ -6,7 +6,11 @@ public:
 
 public:
 	Player* m_target;
-	LagRecord* m_record;
+
+	// note; we hold a strong reference here on purpose.
+	// shots are handled up to a second after they were fired, by which time
+	// the record they point at has long been trimmed from the players deque.
+	std::shared_ptr< LagRecord > m_record;
 	float      m_time, m_lat, m_damage, m_range;
 	vec3_t     m_pos, m_impact_pos;
 	bool       m_confirmed, m_hurt, m_impacted, m_had_pred_error;

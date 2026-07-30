@@ -2125,6 +2125,18 @@ public:
 		return get< float >(g_entoffsets.m_surfaceFriction);
 	}
 
+	__forceinline float& m_flStamina() {
+		return get< float >(g_entoffsets.m_flStamina);
+	}
+
+	__forceinline float& m_flVelocityModifier() {
+		return get< float >(g_entoffsets.m_flVelocityModifier);
+	}
+
+	__forceinline float& m_flFallVelocity() {
+		return get< float >(g_entoffsets.m_flFallVelocity);
+	}
+
 	__forceinline float& m_fAccuracyPenalty() {
 		return get< float >(g_entoffsets.m_fAccuracyPenalty);
 	}

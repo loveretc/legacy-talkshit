@@ -298,11 +298,16 @@ void AimPlayer::pre_anim_update(LagRecord* record, LagRecord* previous) {
 	// apply uninterpolated origin
 	m_player->SetAbsOrigin(m_player->m_vecOrigin());
 
+	// note; correct_landing already put the ground state of the ANIMATION time into
+	//       the entity flags, which is not necessarily the networked one.
+	//       use those, otherwise we undo its correction right here.
+	const int flags = m_player->m_fFlags();
+
 	// do we have a previous record to work with?
 	if (previous) {
 
 		// credits: onetap v2 / llama
-		if ((record->m_flags & FL_ONGROUND) && (previous->m_flags & FL_ONGROUND)) {
+		if ((flags & FL_ONGROUND) && (previous->m_flags & FL_ONGROUND)) {
 			anim_state->m_on_ground = true;
 			anim_state->m_landing = false;
 			anim_state->m_time_since_in_air = 0.f;
@@ -333,7 +338,7 @@ void AimPlayer::pre_anim_update(LagRecord* record, LagRecord* previous) {
 	else {
 
 		// credits: onetap v2 / llama
-		if (record->m_flags & FL_ONGROUND) {
+		if (flags & FL_ONGROUND) {
 			anim_state->m_on_ground = true;
 			anim_state->m_landing = false;
 			anim_state->m_time_since_in_air = 0.f;
@@ -355,6 +360,75 @@ void AimPlayer::pre_anim_update(LagRecord* record, LagRecord* previous) {
 
 
 }
+// function: runs the players animation state up to 'end_time'.
+// the animation state smooths its foot yaw and advances its layers per tick and none
+// of that is linear, so feeding it one huge step is not the same thing as feeding it
+// the ticks the server actually simulated. with fake lag that difference is the whole
+// ball game, which is why this walks the choked ticks one at a time.
+void AimPlayer::run_animation_ticks(LagRecord* record, LagRecord* previous, CCSGOPlayerAnimState* anim_state, float single_tick_time) {
+
+	const float interval = g_csgo.m_globals->m_interval;
+
+	// how many ticks of animation this record is worth.
+	// note; without a previous record we have nothing to walk from, and the clamp
+	//       keeps a bogus simulation time from turning into hundreds of updates.
+	int   ticks = 1;
+	float end_time = single_tick_time;
+
+	// note; tied to the anti-aim resolver switch, it feeds the same thing:
+	//       an animation state that matches what the server actually simulated.
+	if (previous && g_menu.main.aimbot.correct_opt.get(0)) {
+		ticks = std::clamp(record->m_anim_lag, 1, 19);
+
+		// the server animated every tick between the two updates, and the last one
+		// it ran landed exactly on the simulation time we were sent.
+		// with a single update we keep the old behaviour ( old sim time + one tick ).
+		if (ticks > 1)
+			end_time = record->m_sim_time;
+	}
+
+	const vec3_t start_origin = previous ? previous->m_origin : record->m_origin;
+	const vec3_t origin_delta = record->m_origin - start_origin;
+
+	for (int i{ ticks }; i > 0; --i) {
+
+		// time of the tick we are simulating right now.
+		// the last iteration always lands exactly on the records animation time.
+		const float tick_time = end_time - game::TICKS_TO_TIME(i - 1);
+		const int   tick = game::TIME_TO_TICKS(tick_time);
+
+		g_csgo.m_globals->m_curtime = tick_time;
+		g_csgo.m_globals->m_realtime = tick_time;
+		g_csgo.m_globals->m_frame = tick;
+		g_csgo.m_globals->m_tick_count = tick;
+
+		// walk him from where he was towards where he ended up.
+		// we have no idea what he did in between so a straight line is the best guess.
+		const float fraction = static_cast< float >(ticks - i + 1) / static_cast< float >(ticks);
+
+		m_player->m_vecOrigin() = start_origin + (origin_delta * fraction);
+		m_player->SetAbsOrigin(m_player->m_vecOrigin());
+
+		// let the animation state see exactly one tick of time.
+		// note; only when we are actually walking ticks. on the single update path we
+		//       leave whatever pre_anim_update decided so the default behaviour stays
+		//       bit for bit what it was.
+		if (ticks > 1)
+			anim_state->m_last_update_time = tick_time - interval;
+
+		anim_state->m_last_update_frame = tick - 1;
+
+		g_hooks.m_bUpdatingCSA[m_player->index()] = this->m_player->m_bClientSideAnimation() = true;
+		m_player->UpdateClientSideAnimation();
+		g_hooks.m_bUpdatingCSA[m_player->index()] = this->m_player->m_bClientSideAnimation() = false;
+	}
+
+	// make sure we end up on the exact networked origin, rounding in the loop above
+	// must not leak into the matrix we are about to build.
+	m_player->m_vecOrigin() = record->m_origin;
+	m_player->SetAbsOrigin(record->m_origin);
+}
+
 void AimPlayer::post_anim_update(LagRecord* record) {
 
 	CCSGOPlayerAnimState* anim_state = m_player->m_PlayerAnimState();
@@ -458,6 +532,18 @@ void AimPlayer::handle_animations(LagRecord* record) {
 	// is player a bot?
 	//bool bot = game::IsFakePlayer(this->m_player->index());
 
+	// consume the lower body yaw update the netvar proxy caught for us.
+	// note; this is the update the resolver would otherwise have to infer by comparing
+	//       the body yaw of two records, which misses updates that land on a similar
+	//       angle or that get hidden behind fake lag.
+	record->m_lby_updated = m_lby_update_pending;
+	record->m_lby_delta = m_lby_update_delta;
+
+	if (m_lby_update_pending) {
+		m_lby_update_pending = false;
+		m_lby_update_time = record->m_anim_time;
+	}
+
 	// reset fakewalk state.
 	record->m_fake_flick = false;
 	record->m_mode = Resolver::Modes::RESOLVE_NONE;
@@ -555,13 +641,15 @@ void AimPlayer::handle_animations(LagRecord* record) {
 
 	// fix gravity
 	if (m_player->m_fFlags() & FL_ONGROUND)
-		record->m_anim_velocity.z = record->m_velocity.z = record->m_pred_velocity.z = 0.f;
+		record->m_velocity.z = record->m_pred_velocity.z = 0.f;
+
+	// note; this has to happen BEFORE handle_fakewalk.
+	//       it used to run after it, which meant the fakewalk checks were reading
+	//       the raw networked velocity instead of the corrected one.
+	record->m_anim_velocity = record->m_velocity;
 
 	// handle fakewalk
 	handle_fakewalk(record);
-
-	// set anim vel to corrected velocity
-	record->m_anim_velocity = record->m_velocity;
 
 	// ghetto check to see if thye're fakelagging or not
 	if (g_menu.main.aimbot.correct.get()) // !bot && 
@@ -578,9 +666,8 @@ void AimPlayer::handle_animations(LagRecord* record) {
 	// run our pre anim update
 	pre_anim_update(record, previous);
 
-	g_hooks.m_bUpdatingCSA[m_player->index()] = this->m_player->m_bClientSideAnimation() = true;
-	m_player->UpdateClientSideAnimation();
-	g_hooks.m_bUpdatingCSA[m_player->index()] = this->m_player->m_bClientSideAnimation() = false;
+	// run the animation update.
+	run_animation_ticks(record, previous, anim_state, time);
 
 	// run our post anim update
 	post_anim_update(record);
@@ -600,6 +687,12 @@ void AimPlayer::handle_animations(LagRecord* record) {
 	// setup bones for this record
 	// record->m_setup = g_bone_handler.SetupBones( m_player, record->m_bones, record->m_sim_time );
 	record->m_setup = g_bone_handler.SetupBonesOnetap(m_player, record->m_bones, false);
+
+	// remember how many bones this matrix actually holds, everything that copies
+	// it around has to use this instead of the live cache count.
+	record->m_bone_count = record->m_setup
+		? std::clamp(m_player->m_BoneCache().m_CachedBoneCount, 0, MAX_STORED_BONES)
+		: 0;
 
 	// restore backup data.
 	m_player->m_vecVelocity() = backup_velocity;
@@ -681,6 +774,9 @@ void AimPlayer::on_data_update(Player* player) {
 	// update player ptr.
 	m_player = player;
 
+	// let the brute force state go stale if we haven't been shooting at this guy.
+	decay_resolver_state();
+
 	// indicate that this player has been out of pvs.
 	// insert dummy record to separate records
 	// to fix stuff like animation and prediction.
@@ -709,7 +805,18 @@ void AimPlayer::on_data_update(Player* player) {
 	// set shifting tickbase record.
 	current->m_shift = game::TIME_TO_TICKS(current->m_sim_time) - g_csgo.m_globals->m_tick_count;
 
-	while (this->m_records.size() > 64)
+	// note; the server refuses to lag compensate further back than our latency plus
+	//       the interpolation amount, with a 200ms slack on top ( see LagRecord::valid ).
+	//       anything older than that can never be shot at, and every record we hold on
+	//       to is two full bone matrices worth of memory.
+	const float dead_time = g_cl.m_latency + g_cl.m_latency2 + g_cl.m_lerp + 0.2f;
+
+	while (this->m_records.size() > 3
+		&& (current->m_sim_time - this->m_records.back()->m_sim_time) > dead_time)
+		this->m_records.pop_back();
+
+	// hard cap in case simulation times go sideways on us.
+	while (this->m_records.size() > 32)
 		this->m_records.pop_back();
 }
 
@@ -746,6 +853,11 @@ void AimPlayer::OnRoundStart(Player* player) {
 	m_last_duration_in_air = 0.f;
 	m_ticks_since_dormant = INT_MAX;
 
+	m_last_shot_time = 0.f;
+	m_side_memory.fill({ 0.f, 0.f, false });
+
+	m_lby_update_pending = false;
+	m_lby_update_value = m_lby_update_delta = m_lby_update_time = 0.f;
 
 	m_records.clear();
 	m_hitboxes.clear();

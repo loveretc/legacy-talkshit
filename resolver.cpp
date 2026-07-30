@@ -192,6 +192,32 @@ LagRecord* Resolver::FindLastRecord(AimPlayer* data) {
 
 void Resolver::OnBodyUpdate(Player* player, float value) {
 
+	// note; this comes from the m_flLowerBodyYawTarget network proxy, so the server is
+	//       telling us it just rotated someones lower body. that is the exact event the
+	//       rest of this file spends its time inferring from record deltas, and it used
+	//       to be thrown away here.
+	// careful; the original proxy has not run yet, the netvar still holds the old value.
+	if (!player || !player->IsPlayer())
+		return;
+
+	const int index = player->index();
+	if (index < 1 || index > 64)
+		return;
+
+	// this is the server confirming our own flick.
+	if (player == g_cl.m_local) {
+		g_cl.OnBodyUpdate(value);
+		return;
+	}
+
+	AimPlayer* data = &g_aimbot.m_players[index - 1];
+
+	// on_data_update runs at the end of the network update, so the record that carries
+	// this change does not exist yet. leave it pending and let handle_animations stamp
+	// it with the right animation time.
+	data->m_lby_update_pending = true;
+	data->m_lby_update_value = value;
+	data->m_lby_update_delta = math::AngleDiff(value, player->m_flLowerBodyYawTarget());
 }
 
 float Resolver::GetAwayAngle(LagRecord* record) {
@@ -341,7 +367,10 @@ void Resolver::ResolveAngles(Player* player, LagRecord* record) {
 		LagRecord* previous = data->m_records[1].get();
 		const float lby_delta = math::AngleDiff(record->m_body, previous->m_body);
 
-		if (std::fabs(lby_delta) > 0.5f && !previous->m_dormant) {
+		// note; the record flag comes from the network proxy and is authoritative.
+		//       the delta comparison stays as a fallback for records the proxy could
+		//       not be matched to ( entering pvs, missed updates ).
+		if ((record->m_lby_updated || std::fabs(lby_delta) > 0.5f) && !previous->m_dormant) {
 
 			data->m_body_timer = FLT_MIN;
 			data->m_body_updated_idk = 0;
@@ -396,9 +425,16 @@ void Resolver::ResolveAngles(Player* player, LagRecord* record) {
 			const float body_diff = math::AngleDiff(record->m_body, record->m_eye_angles.y);
 			const float eye_diff = record->m_eye_angles.x - previous->m_eye_angles.x;
 
+			// note; the lby check was computed here but never used, which made this
+			//       branch bail out of the whole resolve for anyone whose networked
+			//       pitch merely looked sane, anti-aim or not.
+			//       if his lower body actually agrees with his networked yaw he really
+			//       isn't desyncing and we can trust what we got, otherwise fall through
+			//       to the resolver like we should.
 			if (std::abs(eye_diff) <= 35.f
 				&& std::abs(record->m_eye_angles.x) <= 45.f
-				&& std::abs(yaw_diff) <= 45.f) {
+				&& std::abs(yaw_diff) <= 45.f
+				&& std::abs(body_diff) <= 35.f) {
 				record->m_resolver_mode = "PITCH 0";
 				return;
 			}
@@ -422,16 +458,13 @@ void Resolver::ResolveAngles(Player* player, LagRecord* record) {
 		break;
 	}
 
-	if (data->m_old_stand_move_idx != data->m_stand_move_idx
-		|| data->m_old_stand_no_move_idx != data->m_stand_no_move_idx) {
-		data->m_old_stand_move_idx = data->m_stand_move_idx;
-		data->m_old_stand_no_move_idx = data->m_stand_no_move_idx;
-
-		if (auto animstate = player->m_PlayerAnimState(); animstate != nullptr) {
-			animstate->m_foot_yaw = record->m_eye_angles.y;
-			player->SetAbsAngles(ang_t{ 0, animstate->m_foot_yaw, 0 });
-		}
-	}
+	// note; this used to poke animstate->m_foot_yaw and the abs angles directly whenever
+	//       a brute index changed. we run before the animation update, so pre_anim_update
+	//       overwrote it right after anyway, and on the paths where it didn't it leaked
+	//       into the next record. the resolved yaw already reaches the animation through
+	//       m_angEyeAngles in handle_animations, which is where it belongs.
+	data->m_old_stand_move_idx = data->m_stand_move_idx;
+	data->m_old_stand_no_move_idx = data->m_stand_no_move_idx;
 
 	// normalize the eye angles, doesn't really matter but its clean.
 	math::NormalizeAngle(record->m_eye_angles.y);
@@ -759,6 +792,22 @@ void Resolver::ResolveStand(AimPlayer* data, LagRecord* record) {
 				data->m_overlap_offset = std::clamp((std::fabs(back_delta) / 2.f), -35.f, 35.f);
 				record->m_resolver_mode = "F:OVERLAP+";
 			}
+		}
+	}
+
+	// hit memory; we already landed a shot on this player in this exact mode not
+	// long ago, so re-use the delta that worked instead of walking the brute force
+	// from the start. any miss with that delta invalidates it again.
+	// note; part of the anti-aim resolver, no separate switch for it.
+	if (g_menu.main.aimbot.correct_opt.get(0) && record->m_shot_type != 1) {
+		const size_t memory_mode = data->m_moved ? Modes::RESOLVE_DATA : Modes::RESOLVE_NO_DATA;
+		float locked_delta = 0.f;
+
+		if (data->get_locked_delta(memory_mode, locked_delta)) {
+			record->m_mode = memory_mode;
+			record->m_resolver_mode = XOR("S:HITMEM");
+			record->m_eye_angles.y = record->m_body + locked_delta;
+			return;
 		}
 	}
 

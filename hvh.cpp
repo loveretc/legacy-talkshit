@@ -2,6 +2,13 @@
 
 HVH g_hvh{ };;
 
+bool HVH::IsManualActive() {
+	if (!g_menu.main.antiaim.manual_enabled.get())
+		return false;
+
+	return m_left || m_right || m_back || m_forward;
+}
+
 void HVH::IdealPitch() {
 	CCSGOPlayerAnimState* state = g_cl.m_local->m_PlayerAnimState();
 	if (!state)
@@ -11,22 +18,24 @@ void HVH::IdealPitch() {
 }
 
 void HVH::AntiAimPitch() {
-	bool safe = true;
 
+	// note; there used to be a hardcoded 'safe' flag here that was always true, so the
+	//       out of range ( +-720 ) halves of every branch below were dead code.
+	//       the engine clamps those to +-89 on the way out anyway.
 	switch (m_pitch) {
 	case 1:
 		// down.
-		g_cl.m_cmd->m_view_angles.x = safe ? 89.f : 720.f;
+		g_cl.m_cmd->m_view_angles.x = 89.f;
 		break;
 
 	case 2:
 		// up.
-		g_cl.m_cmd->m_view_angles.x = safe ? -89.f : -720.f;
+		g_cl.m_cmd->m_view_angles.x = -89.f;
 		break;
 
 	case 3:
 		// random.
-		g_cl.m_cmd->m_view_angles.x = g_csgo.RandomFloat(safe ? -89.f : -720.f, safe ? 89.f : 720.f);
+		g_cl.m_cmd->m_view_angles.x = g_csgo.RandomFloat(-89.f, 89.f);
 		break;
 
 	case 4:
@@ -206,16 +215,30 @@ void HVH::AutoDirection() {
 }
 
 void HVH::GetAntiAimDirection() {
+
+	// note; this check used to sit between the switch statement below and its first
+	//       case label, where it could never run.
+	if (!g_cl.m_local->alive())
+		return;
+
+	// note; this has to happen before the edge anti-aim can bail out.
+	//       it used to be read after it, so every tick edge anti-aim triggered left
+	//       m_view holding the value from some earlier tick.
+	m_view = g_cl.m_cmd->m_view_angles.y;
+
+	// a manual direction is an explicit input from the user, it beats edge anti-aim.
+	const bool manual = IsManualActive();
+
 	// edge aa.
-	if (g_menu.main.antiaim.edge.get() && g_cl.m_local->m_vecVelocity().length() < 320.f) {
+	if (!manual && g_menu.main.antiaim.edge.get() && g_cl.m_local->m_vecVelocity().length() < 320.f) {
 
 		ang_t ang;
 		if (DoEdgeAntiAim(g_cl.m_local, ang)) {
 			m_direction = ang.y;
+			math::NormalizeAngle(m_direction);
 			return;
 		}
 	}
-	m_view = g_cl.m_cmd->m_view_angles.y;
 
 	if (m_base_angle > 0) {
 
@@ -267,79 +290,47 @@ void HVH::GetAntiAimDirection() {
 	// switch direction modes.
 	switch (m_dir) {
 
-		if (!g_cl.m_local->alive())
-			return;
-
 		// auto.
 	case 0:
 		AutoDirection();
 		m_direction = m_auto;
-
-		if (g_hvh.m_left)
-			m_direction = m_view + 110.f;
-		if (g_hvh.m_right)
-			m_direction = m_view - 110.f;
-		if (g_hvh.m_back)
-			m_direction = m_view + 170.f;
-		if (g_hvh.m_forward)
-			m_direction = m_view;
 		break;
 
 		// backwards.
 	case 1:
 		m_direction = m_view + 180.f;
-
-		if (g_hvh.m_left)
-			m_direction = m_view + 110.f;
-		if (g_hvh.m_right)
-			m_direction = m_view - 110.f;
-		if (g_hvh.m_back)
-			m_direction = m_view + 170.f;
-		if (g_hvh.m_forward)
-			m_direction = m_view;
 		break;
 
 		// left.
 	case 2:
 		m_direction = m_view + 90.f;
-		if (g_hvh.m_left)
-			m_direction = m_view + 110.f;
-		if (g_hvh.m_right)
-			m_direction = m_view - 110.f;
-		if (g_hvh.m_back)
-			m_direction = m_view + 170.f;
-		if (g_hvh.m_forward)
-			m_direction = m_view;
 		break;
 
 		// right.
 	case 3:
 		m_direction = m_view - 90.f;
-		if (g_hvh.m_left)
-			m_direction = m_view + 110.f;
-		if (g_hvh.m_right)
-			m_direction = m_view - 110.f;
-		if (g_hvh.m_back)
-			m_direction = m_view + 170.f;
-		if (g_hvh.m_forward)
-			m_direction = m_view;
 		break;
 
 		// custom.
 	case 4:
 		m_direction = m_view + m_dir_custom;
-		if (g_hvh.m_left)
-			m_direction = m_view + 110.f;
-		if (g_hvh.m_right)
-			m_direction = m_view - 110.f;
-		if (g_hvh.m_back)
-			m_direction = m_view + 170.f;
-		if (g_hvh.m_forward)
-			m_direction = m_view;
 		break;
 
 	default:
 		break;
+	}
+
+	// a held manual direction overrides whatever the mode picked.
+	// note; this block was copy pasted into all five cases above.
+	if (manual) {
+		if (m_left)
+			m_direction = m_view + 110.f;
+		else if (m_right)
+			m_direction = m_view - 110.f;
+		else if (m_back)
+			m_direction = m_view + 170.f;
+		else if (m_forward)
+			m_direction = m_view;
 	}
 
 	// normalize the direction.
@@ -486,9 +477,9 @@ void HVH::DoRealAntiAim() {
 
 	if (m_yaw > 0) {
 
-		bool manual = (g_hvh.m_left || g_hvh.m_back || g_hvh.m_right || g_hvh.m_forward);
-
-		//bool manual = (g_hvh.m_left || g_hvh.m_back || g_hvh.m_right || g_hvh.m_forward);
+		// note; this used to read the keybind flags directly, so the manual anti-aim
+		//       kept working with 'Enable manual anti-aim' unchecked.
+		const bool manual = IsManualActive();
 
 		// if we have a yaw active, which is true if we arrived here.
 		// set the yaw to the direction before applying any other operations.
@@ -937,9 +928,9 @@ void HVH::SendPacket() {
 		}
 
 
-		// force fake-lag to 14 when fakelagging.
+		// force fake-lag to the shootable limit when fakewalking.
 		if (g_input.GetKeyState(g_menu.main.misc.fakewalk.get()) && g_cl.m_flags & FL_ONGROUND) {
-			*g_cl.m_packet = g_cl.m_lag >= 14;
+			*g_cl.m_packet = g_cl.m_lag >= k_max_shootable_lag;
 		}
 
 		static int timer = 0;
@@ -962,10 +953,10 @@ void HVH::SendPacket() {
 		}
 
 		if (g_menu.main.antiaim.fakelag_breaklc.get() && g_cl.m_local->m_vecVelocity().length() > 230.f && !(g_cl.m_flags & FL_ONGROUND) && !g_cl.m_hit_floor)
-			*g_cl.m_packet = g_cl.m_lag >= 14;
+			*g_cl.m_packet = g_cl.m_lag >= k_max_shootable_lag;
 
 		// disable firing, since we cannot choke the last packet.
-		if (g_cl.m_lag >= 14)
+		if (g_cl.m_lag >= k_max_shootable_lag)
 			g_cl.m_weapon_fire = false;
 	}
 	// we somehow reached the maximum amount of lag.

@@ -7,15 +7,13 @@ public:
 
 public:
 	// ctor.
-	__forceinline AdaptiveAngle( float yaw, float penalty = 0.f ) {
+	// note; this used to take a 'penalty' that nothing ever passed a value for.
+	__forceinline AdaptiveAngle( float yaw ) {
 		// set yaw.
 		m_yaw = math::NormalizedAngle( yaw );
 
 		// init distance.
 		m_dist = 0.f;
-
-		// remove penalty.
-		m_dist -= penalty;
 	}
 };
 
@@ -53,7 +51,18 @@ public:
 
 	bool   m_left, m_right, m_back, m_forward;
 
+	// note; the final packet of a move can never be choked, so we lose the ability to
+	//       shoot a couple of ticks before we hit the actual choke limit.
+	//       the engine clamp itself is patched open in InputPrediction::Initialize, but
+	//       the server still only processes sv_maxusrcmdprocessticks ( 16 ) per update,
+	//       which is what Client::m_max_lag reflects.
+	static constexpr int k_max_shootable_lag = 14;
+
 public:
+	// function: is the user holding a manual anti-aim direction right now?
+	// note; defined in the cpp, this header is included before the menu exists.
+	bool IsManualActive( );
+
 	void IdealPitch( );
 	void AntiAimPitch( );
 	void AutoDirection( );

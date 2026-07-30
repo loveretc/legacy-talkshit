@@ -42,6 +42,7 @@ public:
 	void MouseFix(CUserCmd* cmd);
 	void SetAngles();
 	void OnCreateMove();
+	void OnBodyUpdate(float value);
 	void Clantag();
 	void KillFeed();
 	void MotionBlur();

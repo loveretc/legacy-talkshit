@@ -350,8 +350,11 @@ void callbacks::ConfigSave( ) {
 	g_notify.add( tfm::format( XOR( "saved config %s\n" ), config.data( ) ) );
 }
 
-void callbacks::emporium() {
-	g_csgo.m_engine->ExecuteClientCmd("connect na.2018hvh.com");
+void callbacks::Unload() {
+	// note; we are being called from the menu, which draws from inside PaintTraverse.
+	//       tearing our hooks down from in here would mean unhooking the very call we
+	//       are standing in, so just raise the flag and let the next frame do it.
+	g_unloader.Request();
 }
 
 void callbacks::retry() {

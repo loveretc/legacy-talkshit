@@ -45,10 +45,18 @@ bool BoneHandler::SetupBones( Player* player, BoneArray* pBoneMatrix, float time
 
 
 
-bool BoneHandler::SetupBonesOnetap( Player* m_pPlayer, matrix3x4_t* m_pBones, bool m_bInterpolate )
+bool BoneHandler::SetupBonesOnetap( Player* m_pPlayer, matrix3x4_t* m_pBones, bool m_bInterpolate, int m_iBoneMask )
 {
 	// backup vars.
 	const int m_fBackupEffects = m_pPlayer->m_fEffects( );
+
+	// note; the ik context makes the game slide feet around to match the ground,
+	//       which the server never does for the matrix it lag compensates with.
+	//       leaving it alive here was the difference between our legs and the real ones.
+	const auto m_pBackupIKContext = m_pPlayer->m_pIKContext( );
+	const int  m_iBackupOcclusionFlags = m_pPlayer->m_iOcclusionFlags( );
+	const int  m_iBackupOcclusionFrame = m_pPlayer->m_iOcclusionFramecount( );
+	const auto m_BackupClientEffects = m_pPlayer->m_ClientEntEffects( );
 
 	// backup globals
 	const float m_flCurtime = g_csgo.m_globals->m_curtime;
@@ -63,8 +71,10 @@ bool BoneHandler::SetupBonesOnetap( Player* m_pPlayer, matrix3x4_t* m_pBones, bo
 	static ConVar* r_jiggle_bones = g_csgo.m_cvar->FindVar( HASH( "r_jiggle_bones" ) );
 
 	// if jiggle bone isnt 0, force it to be 0
-	if( r_jiggle_bones->GetInt( ) != 0 )
+	if( r_jiggle_bones->GetInt( ) != 0 ) {
+		g_unloader.RememberConvar( r_jiggle_bones );
 		r_jiggle_bones->SetValue( 0 );
+	}
 
 	g_csgo.m_globals->m_curtime = m_pPlayer->m_flSimulationTime( );
 	g_csgo.m_globals->m_realtime = m_pPlayer->m_flSimulationTime( );
@@ -79,11 +89,25 @@ bool BoneHandler::SetupBonesOnetap( Player* m_pPlayer, matrix3x4_t* m_pBones, bo
 	else
 		m_pPlayer->m_fEffects( ) &= ~EF_NOINTERP;
 
+	// make sure the game can't hand us back a cached / occluded matrix and
+	// don't let ik touch the result.
+	m_pPlayer->m_iOcclusionFlags( ) &= ~2u;
+	m_pPlayer->m_iOcclusionFramecount( ) = 0;
+	m_pPlayer->m_flLastBoneSetupTime( ) = 0.f;
+	m_pPlayer->RemoveIKContext( );
+	m_pPlayer->InvalidateBoneCache( );
+
 	// setup bones
-	const bool m_bRet = m_pPlayer->SetupBones( m_pBones, 128, BONE_USED_BY_ANYTHING, g_csgo.m_globals->m_curtime );
-	
+	g_bone_handler.m_running = true;
+	const bool m_bRet = m_pPlayer->SetupBones( m_pBones, MAX_STORED_BONES, m_iBoneMask, g_csgo.m_globals->m_curtime );
+	g_bone_handler.m_running = false;
+
 	// set back effects to their original state
 	m_pPlayer->m_fEffects( ) = m_fBackupEffects;
+	m_pPlayer->m_pIKContext( ) = m_pBackupIKContext;
+	m_pPlayer->m_iOcclusionFlags( ) = m_iBackupOcclusionFlags;
+	m_pPlayer->m_iOcclusionFramecount( ) = m_iBackupOcclusionFrame;
+	m_pPlayer->m_ClientEntEffects( ) = m_BackupClientEffects;
 
 	// restore globals.
 	g_csgo.m_globals->m_curtime = m_flCurtime;

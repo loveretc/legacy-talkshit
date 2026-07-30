@@ -23,9 +23,29 @@ vgui::HFont F::Icons;
 
 void render::init( ) {
 
-	//include fonts from bytearray
-	AddFontMemResourceEx((void*)undefeated_ttf, sizeof(undefeated_ttf_len), nullptr, &g_hooks.undefeated);
-	AddFontMemResourceEx((void*)verdana_bold, sizeof(verdana_bold_len), nullptr, &g_hooks.boldVerdana);
+	// include fonts from bytearray.
+	// note; this is called again on every resolution change, so drop whatever we
+	//       registered last time instead of stacking another copy on top.
+	// note; the size used to be sizeof( undefeated_ttf_len ), which is 4 - the size of
+	//       the length variable, not the font. gdi rejected it every time.
+	// note; we keep the returned handles. the old code passed our DWORDs as the
+	//       'number of fonts' out parameter and threw the handles away, which left the
+	//       process holding private fonts backed by memory inside this module, with no
+	//       way to take them back out before unloading.
+	DWORD font_count{ };
+
+	if (g_hooks.m_font_undefeated) {
+		RemoveFontMemResourceEx(g_hooks.m_font_undefeated);
+		g_hooks.m_font_undefeated = nullptr;
+	}
+
+	if (g_hooks.m_font_bold_verdana) {
+		RemoveFontMemResourceEx(g_hooks.m_font_bold_verdana);
+		g_hooks.m_font_bold_verdana = nullptr;
+	}
+
+	g_hooks.m_font_undefeated = AddFontMemResourceEx((void*)undefeated_ttf, undefeated_ttf_len, nullptr, &font_count);
+	g_hooks.m_font_bold_verdana = AddFontMemResourceEx((void*)verdana_bold, verdana_bold_len, nullptr, &font_count);
 
 	menu	   = Font( XOR( "Verdana" ), 12, FW_NORMAL, FONTFLAG_ANTIALIAS);
 	menu_shade = Font( XOR( "Verdana" ), 12, FW_BOLD, FONTFLAG_ANTIALIAS | FONTFLAG_DROPSHADOW );

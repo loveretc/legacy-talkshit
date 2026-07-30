@@ -81,6 +81,9 @@ public:
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_ArmorValue;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flMaxspeed;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_surfaceFriction;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flStamina;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flVelocityModifier;
+    XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flFallVelocity;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_flFlashBangTime;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_angEyeAngles;
     XoredNetvar< GET_XOR_KEYUI32, __COUNTER__ > m_aimPunchAngle;
@@ -209,6 +212,9 @@ public:
         INIT_XOREDNETVAR( m_flMaxspeed,                 HASH( "DT_BasePlayer" ),           HASH( "m_flMaxspeed" ) );
         INIT_XOREDNETVAR( pl,                           HASH("DT_BasePlayer"),             HASH( "pl"));
         INIT_XOREDNETVAR( m_surfaceFriction,            HASH( "C_BasePlayer" ),            HASH( "m_surfaceFriction" ) );
+        INIT_XOREDNETVAR( m_flStamina,                  HASH( "DT_CSPlayer" ),             HASH( "m_flStamina" ) );
+        INIT_XOREDNETVAR( m_flVelocityModifier,         HASH( "DT_CSPlayer" ),             HASH( "m_flVelocityModifier" ) );
+        INIT_XOREDNETVAR( m_flFallVelocity,             HASH( "C_BasePlayer" ),            HASH( "m_flFallVelocity" ) );
         INIT_XOREDNETVAR( m_angEyeAngles,               HASH( "DT_CSPlayer" ),             HASH( "m_angEyeAngles" ) );
         INIT_XOREDNETVAR( m_aimPunchAngle,              HASH( "DT_CSPlayer" ),             HASH( "m_aimPunchAngle" ) );
         INIT_XOREDNETVAR( m_viewPunchAngle,             HASH( "DT_CSPlayer" ),             HASH( "m_viewPunchAngle" ) );

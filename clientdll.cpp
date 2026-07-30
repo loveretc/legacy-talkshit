@@ -115,6 +115,24 @@ float bloop = 1.f;
 static float last_upd = 0.f;
 
 void Hooks::FrameStageNotify(Stage_t stage) {
+
+	// handle a pending unload at the top of the frame, where the only hook of ours on
+	// the stack is this one.
+	if (stage == FRAME_START && !g_unloader.Done()) {
+
+		// note; grab this now. once the vmt is restored GetOldMethod has nothing left
+		//       to read from.
+		const auto original = g_hooks.m_client.GetOldMethod< FrameStageNotify_t >(CHLClient::FRAMESTAGENOTIFY);
+
+		g_unloader.Think();
+
+		if (g_unloader.Done()) {
+			// everything of ours is detached, hand this call to the game and get out.
+			original(this, stage);
+			return;
+		}
+	}
+
 	// save stage.
 	if (stage != FRAME_START)
 		g_cl.m_stage = stage;

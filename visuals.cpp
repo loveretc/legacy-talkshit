@@ -2,6 +2,26 @@
 
 Visuals g_visuals{ };;
 
+void Visuals::ResetWorldModulation() {
+
+	for (uint16_t h{ g_csgo.m_material_system->FirstMaterial() }; h != g_csgo.m_material_system->InvalidMaterial(); h = g_csgo.m_material_system->NextMaterial(h)) {
+		IMaterial* mat = g_csgo.m_material_system->GetMaterial(h);
+		if (!mat)
+			continue;
+
+		const hash32_t group = FNV1a::get(mat->GetTextureGroupName());
+
+		if (group != HASH("World textures") && group != HASH("StaticProp textures"))
+			continue;
+
+		mat->ColorModulate(1.f, 1.f, 1.f);
+		mat->AlphaModulate(1.f);
+	}
+
+	if (g_csgo.r_DrawSpecificStaticProp->GetInt() != -1)
+		g_csgo.r_DrawSpecificStaticProp->SetValue(-1);
+}
+
 void Visuals::ModulateWorld() {
 	std::vector< IMaterial* > world, props;
 
@@ -127,6 +147,7 @@ void Visuals::ThirdpersonThink( ) {
 		math::AngleVectors( offset, &forward );
 
 		static auto camdist = g_csgo.m_cvar->FindVar(HASH("cam_idealdist"));
+		g_unloader.RememberConvar(camdist);
 		camdist->SetValue(g_menu.main.visuals.thirdperson_distance.get());
 
 		// cam_idealdist convar.

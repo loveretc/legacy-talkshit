@@ -66,7 +66,7 @@ namespace callbacks {
 	void ConfigLoad6( );
 	void ConfigLoad( );
 	void ConfigSave( );
-	void emporium( );
+	void Unload( );
 	void retry( );
 	
 	bool IsHitmarker( );

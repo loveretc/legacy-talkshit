@@ -20,6 +20,16 @@ public:
 
 	void init();
 
+	// function: drops our references to the materials we looked up at init.
+	// note; we deliberately do NOT DecrementReferenceCount here. these are materials the
+	//       game already owns and keeps loaded anyway, so the extra reference costs us
+	//       nothing, and IMaterial's decrement index isn't one we have verified.
+	__forceinline void shutdown() {
+		m_materials.clear();
+		m_players.clear();
+		m_running = false;
+	}
+
 	bool OverridePlayer(int index);
 	bool GenerateLerpedMatrix(int index, BoneArray* out);
 	void RenderHistoryChams(int index);

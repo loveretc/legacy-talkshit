@@ -9,7 +9,7 @@ public:
 public:
 
     bool SetupBones( Player* entity, BoneArray* pBoneMatrix, float time, bool disable_interp = false );
-    bool SetupBonesOnetap( Player* m_pPlayer, matrix3x4_t* m_pBones, bool m_bInterpolate );
+    bool SetupBonesOnetap( Player* m_pPlayer, matrix3x4_t* m_pBones, bool m_bInterpolate, int m_iBoneMask = BONE_USED_BY_ANYTHING );
 };
 
 extern BoneHandler g_bone_handler;

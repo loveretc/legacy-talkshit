@@ -205,6 +205,7 @@ public:
 		return util::get_method< void( __thiscall* )( void* ) >( this, INCREMENTREFERENCECOUNT )( this );
 	}
 
+
 	__forceinline void AlphaModulate( float alpha ) {
 		return util::get_method< void( __thiscall* )( void*, float ) >( this, ALPHAMODULATE )( this, alpha );
 	}

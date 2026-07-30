@@ -157,6 +157,16 @@ public:
 		return m_offsets[ table ][ prop ].m_prop_ptr->m_ProxyFn;
 	}
 
+	// restore a netvar proxy we replaced.
+	__forceinline void RestoreProxy( hash32_t table, hash32_t prop, RecvVarProxy_t original ) {
+		auto netvar_entry = m_offsets[ table ][ prop ];
+
+		if( netvar_entry.m_datamap_var || !netvar_entry.m_prop_ptr || !original )
+			return;
+
+		netvar_entry.m_prop_ptr->m_ProxyFn = original;
+	}
+
 	// set netvar proxy.
 	__forceinline void SetProxy( hash32_t table, hash32_t prop, void* proxy, RecvVarProxy_t &original ) {
 		auto netvar_entry = m_offsets[ table ][ prop ];

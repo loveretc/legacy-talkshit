@@ -26,9 +26,10 @@ public:
 			g_csgo.m_game_events->AddListener( this, e.first.data( ), false );
 	}
 
-	//__forceinline void unregister_events( ) {
-	//	g_csgo.m_game_events->RemoveListener( this );
-	//}
+	__forceinline void unregister_events( ) {
+		if( g_csgo.m_game_events )
+			g_csgo.m_game_events->RemoveListener( this );
+	}
 
 	void FireGameEvent( IGameEvent* evt ) override {
 		const std::string name = evt->GetName( );

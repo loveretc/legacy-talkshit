@@ -94,6 +94,7 @@ using ulong_t = unsigned long;
 #include "skins.h"
 #include "events.h"
 #include "shots.h"
+#include "unload.h"
 
 #include "deps/minhook/MinHook.h"
 #include "helpers.h"

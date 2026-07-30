@@ -32,12 +32,32 @@ public:
 		//reset( );
 	}
 
+	// the object we hooked, so callers can check it is still the one they think it is.
+	__forceinline Address base( ) const {
+		return m_base;
+	}
+
 	// reset entire class.
 	__forceinline void reset( ) {
+		// note; put the pointer back BEFORE releasing our copy. the other way around
+		//       leaves a window where the object points at memory we already handed
+		//       back to the allocator.
+		if( m_base && m_old_vmt )
+			m_base.set( m_old_vmt );
+
 		m_new_vmt.reset( );
 
-		if( m_base )
-			m_base.set( m_old_vmt );
+		m_base = Address{};
+		m_old_vmt = nullptr;
+		m_size = 0;
+		m_rtti = false;
+	}
+
+	// drop the hook WITHOUT writing to the object we hooked.
+	// note; for interfaces the game destroys and recreates ( the net channel ), where
+	//       restoring the vtable pointer would corrupt whatever now owns that memory.
+	__forceinline void abandon( ) {
+		m_new_vmt.reset( );
 
 		m_base = Address{};
 		m_old_vmt = nullptr;

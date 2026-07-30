@@ -90,12 +90,10 @@ bool Extrapolation::HandleLagCompensation(AimPlayer* data) {
 
 	const vec3_t origin_delta = pred_data.m_origin - record->m_origin;
 
-
-	for (int i{ 0 }; i <= 128; i++) {
-
-		if (i < 0 || i > 128)
-			break;
-
+	// shift the matrix over by however much he moved.
+	// note; m_bone_count, not 128. the arrays are exactly 128 entries long and the
+	//       old loop ran to 128 inclusive, writing one matrix past the end of them.
+	for (int i{ }; i < record->m_bone_count; ++i) {
 		record->m_extrap_bones[i][0][3] += origin_delta.x;
 		record->m_extrap_bones[i][1][3] += origin_delta.y;
 		record->m_extrap_bones[i][2][3] += origin_delta.z;
@@ -104,71 +102,140 @@ bool Extrapolation::HandleLagCompensation(AimPlayer* data) {
 	return true;
 }
 
+// function: slides along whatever we bump into, same idea as CGameMovement::TryPlayerMove.
+static vec3_t ClipMove(const extrapolation_data_t& data, const vec3_t& start, vec3_t velocity, float time_left) {
+	CGameTrace            trace{ };
+	CTraceFilterWorldOnly filter{ };
+
+	vec3_t pos = start;
+
+	// the game allows up to 4 bumps per move.
+	for (int bump{ }; bump < 4; ++bump) {
+
+		if (time_left <= 0.f || velocity.length_sqr() <= 0.f)
+			break;
+
+		g_csgo.m_engine_trace->TraceRay(
+			{ pos, pos + velocity * time_left, data.m_obb_min, data.m_obb_max },
+			CONTENTS_SOLID, &filter, &trace
+		);
+
+		pos = trace.m_endpos;
+
+		// made it all the way, we're done.
+		if (trace.m_fraction == 1.f)
+			break;
+
+		time_left -= time_left * trace.m_fraction;
+
+		// clip our velocity to the plane we ran into.
+		velocity -= trace.m_plane.m_normal * velocity.dot(trace.m_plane.m_normal);
+
+		const float adjust = velocity.dot(trace.m_plane.m_normal);
+		if (adjust < 0.f)
+			velocity -= trace.m_plane.m_normal * adjust;
+	}
+
+	return pos;
+}
+
 void Extrapolation::SimulateMovement(extrapolation_data_t& data) {
 
-	if (!(data.m_flags & FL_ONGROUND)) {
-		if (!g_csgo.sv_enablebunnyhopping->GetInt()) {
-			const auto speed = data.m_velocity.length();
+	static ConVar* sv_maxvelocity = g_csgo.m_cvar->FindVar(HASH("sv_maxvelocity"));
 
-			const auto max_speed = data.m_player->m_flMaxspeed() * 1.1f;
+	const float interval = g_csgo.m_globals->m_interval;
+	const float gravity = g_csgo.sv_gravity->GetFloat();
+	const bool  on_ground = (data.m_flags & FL_ONGROUND) != 0;
+
+	if (on_ground) {
+		// he is standing on something. if he was airborne the tick before, assume he
+		// keeps holding jump like every single player in this game does.
+		data.m_velocity.z = data.m_was_in_air ? g_csgo.sv_jump_impulse->GetFloat() : 0.f;
+	}
+	else {
+		// note; gravity is applied in halves around the move ( StartGravity / FinishGravity ),
+		//       the old code applied a full tick of it and only while he was ON the ground.
+		data.m_velocity.z -= gravity * interval * 0.5f;
+
+		// the game clamps air speed when bunnyhopping is disabled.
+		if (!g_csgo.sv_enablebunnyhopping->GetInt()) {
+			const float speed = data.m_velocity.length();
+			const float max_speed = data.m_player->m_flMaxspeed() * 1.1f;
 
 			if (max_speed > 0.f && speed > max_speed)
 				data.m_velocity *= (max_speed / speed);
 		}
-
-		if (data.m_was_in_air)
-			data.m_velocity.z = g_csgo.sv_jump_impulse->GetFloat();
 	}
-	else
-		data.m_velocity.z -= g_csgo.sv_gravity->GetFloat() * g_csgo.m_globals->m_interval;
 
-	CGameTrace trace{};
-	CTraceFilterWorldOnly trace_filter{};
+	// remember what we entered this tick as, the flags get recomputed further down.
+	const bool was_airborne = !on_ground;
+	data.m_was_in_air = was_airborne;
 
-	g_csgo.m_engine_trace->TraceRay(
-		{
-			data.m_origin,
-			data.m_origin + data.m_velocity * g_csgo.m_globals->m_interval,
-			data.m_obb_min, data.m_obb_max
-		},
-		CONTENTS_SOLID, &trace_filter, &trace
-	);
+	// CGameMovement::CheckVelocity, clamps every axis on its own.
+	if (sv_maxvelocity) {
+		const float max_velocity = sv_maxvelocity->GetFloat();
 
-	if (trace.m_fraction != 1.f) {
-		for (int i{}; i < 2; ++i) {
-			data.m_velocity -= trace.m_plane.m_normal * data.m_velocity.dot(trace.m_plane.m_normal);
+		math::clamp(data.m_velocity.x, -max_velocity, max_velocity);
+		math::clamp(data.m_velocity.y, -max_velocity, max_velocity);
+		math::clamp(data.m_velocity.z, -max_velocity, max_velocity);
+	}
 
-			const auto adjust = data.m_velocity.dot(trace.m_plane.m_normal);
-			if (adjust < 0.f)
-				data.m_velocity -= trace.m_plane.m_normal * adjust;
+	// regular move.
+	vec3_t end = ClipMove(data, data.m_origin, data.m_velocity, interval);
 
+	// if we are walking and got stopped by something, try to step over it.
+	// without this everyone extrapolates straight into the first stair they walk up.
+	if (on_ground) {
+		const vec3_t flat_delta = end - data.m_origin;
+
+		if (flat_delta.length_2d_sqr() < (data.m_velocity.length_2d() * interval) * (data.m_velocity.length_2d() * interval) * 0.99f) {
+			CGameTrace            trace{ };
+			CTraceFilterWorldOnly filter{ };
+
+			constexpr float step_size = 18.f;
+
+			// move up, forward, then back down. ( CGameMovement::StepMove )
 			g_csgo.m_engine_trace->TraceRay(
-				{
-					trace.m_endpos,
-					trace.m_endpos + (data.m_velocity * (g_csgo.m_globals->m_interval * (1.f - trace.m_fraction))),
-					data.m_obb_min, data.m_obb_max
-				},
-				CONTENTS_SOLID, &trace_filter, &trace
+				{ data.m_origin, data.m_origin + vec3_t(0.f, 0.f, step_size), data.m_obb_min, data.m_obb_max },
+				CONTENTS_SOLID, &filter, &trace
 			);
 
-			if (trace.m_fraction == 1.f)
-				break;
+			const vec3_t stepped = ClipMove(data, trace.m_endpos, data.m_velocity, interval);
+
+			g_csgo.m_engine_trace->TraceRay(
+				{ stepped, stepped - vec3_t(0.f, 0.f, step_size), data.m_obb_min, data.m_obb_max },
+				CONTENTS_SOLID, &filter, &trace
+			);
+
+			// only keep the stepped move if it actually got us further and landed on
+			// something walkable.
+			if (trace.m_plane.m_normal.z > 0.7f
+				&& (trace.m_endpos - data.m_origin).length_2d_sqr() > flat_delta.length_2d_sqr())
+				end = trace.m_endpos;
 		}
 	}
 
-	data.m_origin = trace.m_endpos;
+	data.m_origin = end;
 
-	g_csgo.m_engine_trace->TraceRay(
-		{
-			trace.m_endpos,
-			{ trace.m_endpos.x, trace.m_endpos.y, trace.m_endpos.z - 2.f },
-			data.m_obb_min, data.m_obb_max
-		},
-		CONTENTS_SOLID, &trace_filter, &trace
-	);
+	// second half of the gravity for this tick.
+	if (was_airborne)
+		data.m_velocity.z -= gravity * interval * 0.5f;
 
-	data.m_flags &= ~FL_ONGROUND;
+	// figure out if he is standing on anything now. ( CategorizePosition )
+	{
+		CGameTrace            trace{ };
+		CTraceFilterWorldOnly filter{ };
 
-	if (trace.m_fraction != 1.f && trace.m_plane.m_normal.z > 0.7f)
-		data.m_flags |= FL_ONGROUND;
+		g_csgo.m_engine_trace->TraceRay(
+			{ data.m_origin, { data.m_origin.x, data.m_origin.y, data.m_origin.z - 2.f }, data.m_obb_min, data.m_obb_max },
+			CONTENTS_SOLID, &filter, &trace
+		);
+
+		data.m_flags &= ~FL_ONGROUND;
+
+		// moving up fast enough means we just jumped, we are not on the ground.
+		if (trace.m_fraction != 1.f && trace.m_plane.m_normal.z > 0.7f && data.m_velocity.z <= 140.f)
+			data.m_flags |= FL_ONGROUND;
+	}
 }
+

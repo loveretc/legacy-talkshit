@@ -14,6 +14,7 @@ ulong_t __stdcall Client::init( void* arg ) {
 
 	// modenable fix
 	static const auto voice_modenable = g_csgo.m_cvar->FindVar(HASH("voice_modenable"));
+	g_unloader.RememberConvar(voice_modenable);
 	voice_modenable->SetValue(0);
 
 	g_cl.UnlockHiddenConvars();
@@ -37,6 +38,7 @@ void Client::UnlockHiddenConvars()
 void Client::RemoveSkybox() 
 {
 	static auto sky = g_csgo.r_3dsky;
+	g_unloader.RememberConvar(sky);
 	sky->SetValue(!g_menu.main.visuals.remove_skybox.get());
 	static const auto sv_skyname = g_csgo.m_cvar->FindVar(HASH("sv_skyname"));
 
@@ -273,7 +275,14 @@ void Client::OnMapload() {
 	g_csgo.m_net = g_csgo.m_engine->GetNetChannelInfo();
 
 	if (g_csgo.m_net) {
-		g_hooks.m_net_channel.reset();
+		// note; the engine destroys the old net channel when it builds a new one, so
+		//       putting its vtable pointer back would write into memory that no longer
+		//       belongs to it. only restore the object we actually hooked.
+		if (g_hooks.m_net_channel.base().as< void* >() == g_csgo.m_net)
+			g_hooks.m_net_channel.reset();
+		else
+			g_hooks.m_net_channel.abandon();
+
 		g_hooks.m_net_channel.init(g_csgo.m_net);
 		g_hooks.m_net_channel.add(INetChannel::PROCESSPACKET, util::force_cast(&Hooks::ProcessPacket));
 		g_hooks.m_net_channel.add(INetChannel::SENDDATAGRAM, util::force_cast(&Hooks::SendDatagram));
@@ -380,6 +389,8 @@ void Client::DoMove() {
 	}
 
 	static auto aspect = g_csgo.m_cvar->FindVar(HASH("r_aspectratio"));
+	g_unloader.RememberConvar(aspect);
+
 	if (g_menu.main.misc.aspect.get() > 0.00f)
 		aspect->SetValue(g_menu.main.misc.aspect.get());
 	else
@@ -603,6 +614,25 @@ void Client::OnCreateMove() {
 			m_body_pred = m_anim_time + 1.1f;
 		}
 	}
+}
+
+void Client::OnBodyUpdate(float value) {
+
+	// the server just confirmed it rotated our own lower body.
+	// note; OnCreateMove runs a free wheeling 1.1s timer for this, and it only ticks on
+	//       unchoked commands, so with fake lag on it drifts. this is the real thing.
+	if (!m_local || !m_processing)
+		return;
+
+	// only the standing update runs on the 1.1s clock. while moving the lower body
+	// simply follows our eyes and OnCreateMove already re-arms it every command.
+	if (!(m_flags & FL_ONGROUND) || m_local->m_vecVelocity().length_2d() > 0.1f)
+		return;
+
+	m_body = value;
+
+	// the update happened on the server one outgoing latency ago.
+	m_body_pred = (g_csgo.m_globals->m_curtime - m_latency) + 1.1f;
 }
 
 bool Client::IsFiring(float curtime) {

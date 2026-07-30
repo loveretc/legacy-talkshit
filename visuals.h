@@ -158,6 +158,12 @@ public:
 	std::vector<BulletImpactInfo> bulletImpactInfo;
 
 	static void ModulateWorld( );
+
+	// note; puts every world / prop material back to a plain, fully opaque state,
+	//       ignoring the menu. used when unloading.
+	//       kept separate from ModulateWorld because that one is registered as a menu
+	//       callback and has to stay a void().
+	static void ResetWorldModulation( );
 	void ThirdpersonThink( );
 	void Hitmarker( );
 	void hitmarker_world( );

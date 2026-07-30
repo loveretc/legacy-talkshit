@@ -4,9 +4,13 @@
 // pre-declare.
 class LagRecord;
 
+// max amount of bones we ever store / restore.
+// note; this is the size of every bone array in here, nothing may index past it.
+constexpr int MAX_STORED_BONES = 128;
+
 class BackupRecord {
 public:
-	BoneArray m_bones[128];
+	BoneArray m_bones[MAX_STORED_BONES];
 	int        m_bone_count;
 	vec3_t     m_origin, m_abs_origin;
 	vec3_t     m_mins;
@@ -16,7 +20,8 @@ public:
 public:
 	__forceinline void store(Player* player) {
 
-		m_bone_count = player->m_BoneCache().m_CachedBoneCount;
+		// clamp; models with more bones than our array would blow right past it.
+		m_bone_count = std::clamp(player->m_BoneCache().m_CachedBoneCount, 0, MAX_STORED_BONES);
 		memcpy(m_bones, player->m_BoneCache().m_pCachedBones, m_bone_count * sizeof(matrix3x4_t));
 
 		m_origin = player->m_vecOrigin();
@@ -28,8 +33,10 @@ public:
 
 	__forceinline void restore(Player* player) {
 
-
-		memcpy(player->m_BoneCache().m_pCachedBones, m_bones, m_bone_count * sizeof(matrix3x4_t));
+		// note; use the count we stored with, not the current one.
+		// the cache can be rebuilt with a different model in between.
+		const int count = std::min(m_bone_count, player->m_BoneCache().m_CachedBoneCount);
+		memcpy(player->m_BoneCache().m_pCachedBones, m_bones, count * sizeof(matrix3x4_t));
 
 
 		player->m_vecOrigin() = m_origin;
@@ -71,6 +78,12 @@ public:
 	ang_t  m_eye_angles;
 	ang_t  m_abs_ang;
 	float  m_body;
+
+	// the server rotated this players lower body on this record.
+	// note; ground truth straight from the netvar proxy, not inferred from deltas.
+	bool   m_lby_updated;
+	float  m_lby_delta;
+
 	float  m_duck;
 	std::string m_resolver_mode;
 	std::string m_resolver_mode2;
@@ -87,8 +100,9 @@ public:
 
 	// bone stuff.
 	bool       m_setup;
-	BoneArray m_bones[128];
-	BoneArray m_extrap_bones[128];
+	int        m_bone_count;
+	BoneArray m_bones[MAX_STORED_BONES];
+	BoneArray m_extrap_bones[MAX_STORED_BONES];
 
 	// lagfix stuff.
 	bool   m_broke_lc;
@@ -155,6 +169,9 @@ public:
 
 	// default ctor.
 	__forceinline LagRecord() :
+		m_bone_count{ 0 },
+		m_lby_updated{ false },
+		m_lby_delta{ 0.f },
 		m_setup{ false },
 		m_broke_lc{ false },
 		m_fake_walk{ false },
@@ -169,6 +186,9 @@ public:
 
 	// ctor.
 	__forceinline LagRecord(Player* player) :
+		m_bone_count{ 0 },
+		m_lby_updated{ false },
+		m_lby_delta{ 0.f },
 		m_setup{ false },
 		m_broke_lc{ false },
 		m_fake_walk{ false },
@@ -251,7 +271,7 @@ public:
 
 		// memcpy bones
 		if (m_setup)
-			memcpy(m_extrap_bones, m_bones, m_player->m_BoneCache().m_CachedBoneCount * sizeof(matrix3x4_t));
+			memcpy(m_extrap_bones, m_bones, m_bone_count * sizeof(matrix3x4_t));
 	}
 
 	// function: writes current record to bone cache.
@@ -261,10 +281,12 @@ public:
 		if (m_setup && !m_dormant) {
 			m_player->InvalidateBoneCache();
 
-			if (!m_extrapolated)
-				memcpy(m_player->m_BoneCache().m_pCachedBones, m_bones, m_player->m_BoneCache().m_CachedBoneCount * sizeof(matrix3x4_t));
-			else
-				memcpy(m_player->m_BoneCache().m_pCachedBones, m_extrap_bones, m_player->m_BoneCache().m_CachedBoneCount * sizeof(matrix3x4_t));
+			// note; never write more bones than we actually stored.
+			const int count = std::min(m_bone_count, m_player->m_BoneCache().m_CachedBoneCount);
+
+			memcpy(m_player->m_BoneCache().m_pCachedBones,
+				m_extrapolated ? m_extrap_bones : m_bones,
+				count * sizeof(matrix3x4_t));
 		}
 
 		m_player->m_vecOrigin() = m_pred_origin;

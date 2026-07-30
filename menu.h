@@ -2350,7 +2350,7 @@ public:
 	Keybind  menu_key;
 	Button   save;
 	Button   load;
-	Button   connect;
+	Button   unload;
 	Checkbox retryc;
 	Keybind  retry;
 	Checkbox force_ragdoll;
@@ -2565,9 +2565,9 @@ public:
 		save.SetCallback(callbacks::ConfigSave);
 		RegisterElement(&save, 1);
 
-		connect.setup(XOR("Connect to Dicks"));
-		connect.SetCallback(callbacks::emporium);
-		RegisterElement(&connect, 1);
+		unload.setup(XOR("Unload"));
+		unload.SetCallback(callbacks::Unload);
+		RegisterElement(&unload, 1);
 	}
 };
 

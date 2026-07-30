@@ -115,6 +115,35 @@ public:
 	bool m_shift;
 	bool m_hit;
 
+	// resolver side memory.
+	// stores the (eye yaw - lby) delta that actually landed a hit for a given
+	// resolve mode, so we can re-use it instead of walking the brute force
+	// from scratch every single time the player stops moving.
+	struct side_memory_t {
+		float m_delta{ };
+		float m_time{ };
+		bool  m_valid{ };
+	};
+
+	// indexed by Resolver::Modes, sized generously so adding a mode can't overflow us.
+	std::array< side_memory_t, 16 > m_side_memory;
+
+	// how long a landed delta stays trustworthy, and how long the brute force
+	// state survives without us shooting at this player at all.
+	static constexpr float k_side_memory_lifetime = 4.f;
+	static constexpr float k_brute_decay_time = 8.f;
+
+	// last time we resolved / shot at this player.
+	float m_last_shot_time{ };
+
+	// ground truth from the lower body yaw network proxy ( Resolver::OnBodyUpdate ).
+	// set while the network update is still being decoded, consumed by the record
+	// that update produced.
+	bool  m_lby_update_pending{ };
+	float m_lby_update_value{ };
+	float m_lby_update_delta{ };
+	float m_lby_update_time{ };
+
 	// network shit
 	float m_networked_angle = 1337.f;
 	bool  m_is_kaaba = false;
@@ -132,6 +161,7 @@ public:
 	void resetup_velocity(LagRecord* record, LagRecord* previous);
 	void correct_landing(LagRecord* record, LagRecord* previous);
 	void pre_anim_update(LagRecord* record, LagRecord* previous);
+	void run_animation_ticks(LagRecord* record, LagRecord* previous, CCSGOPlayerAnimState* anim_state, float end_time);
 	void post_anim_update(LagRecord* record);
 	void handle_fakewalk(LagRecord* record);
 	void handle_animations(LagRecord* record);
@@ -141,6 +171,65 @@ public:
 	void SetupHitboxes(LagRecord* record, bool history);
 	bool SetupHitboxPoints(LagRecord* record, BoneArray* bones, int index, std::vector< vec3_t >& points);
 	bool GetBestAimPosition(vec3_t& aim, float& damage, int& hitbox, int& hitgroup, LagRecord* record);
+
+public:
+
+	// function: a shot resolved with 'mode' landed, remember the delta that worked.
+	__forceinline void on_resolver_hit(size_t mode, float delta) {
+		m_last_shot_time = g_csgo.m_globals->m_realtime;
+
+		if (mode >= m_side_memory.size())
+			return;
+
+		m_side_memory[mode] = { delta, g_csgo.m_globals->m_realtime, true };
+	}
+
+	// function: a shot resolved with 'mode' missed, that delta is not trustworthy anymore.
+	__forceinline void on_resolver_miss(size_t mode, float delta) {
+		m_last_shot_time = g_csgo.m_globals->m_realtime;
+
+		if (mode >= m_side_memory.size())
+			return;
+
+		// only drop the memory if we actually missed with (roughly) the remembered angle,
+		// a miss with a completely different delta says nothing about it.
+		if (m_side_memory[mode].m_valid
+			&& std::abs(math::AngleDiff(m_side_memory[mode].m_delta, delta)) <= 15.f)
+			m_side_memory[mode].m_valid = false;
+	}
+
+	// function: returns the delta that last landed for this mode, if it is still fresh.
+	__forceinline bool get_locked_delta(size_t mode, float& delta) {
+		if (mode >= m_side_memory.size() || !m_side_memory[mode].m_valid)
+			return false;
+
+		if (g_csgo.m_globals->m_realtime - m_side_memory[mode].m_time > k_side_memory_lifetime) {
+			m_side_memory[mode].m_valid = false;
+			return false;
+		}
+
+		delta = m_side_memory[mode].m_delta;
+		return true;
+	}
+
+	// function: the brute force indices are only meaningful while we are actively
+	// shooting at someone. without this they stay stuck at whatever value they had
+	// minutes ago and the resolver starts on a random mode for no reason.
+	__forceinline void decay_resolver_state() {
+		if (m_last_shot_time <= 0.f)
+			return;
+
+		if (g_csgo.m_globals->m_realtime - m_last_shot_time < k_brute_decay_time)
+			return;
+
+		m_body_idx = m_body_pred_idx = m_air_idx = 0;
+		m_stand_move_idx = m_stand_no_move_idx = 0;
+		m_missed_invertfs = m_missed_back = false;
+		m_last_shot_time = 0.f;
+
+		for (auto& s : m_side_memory)
+			s.m_valid = false;
+	}
 
 public:
 
@@ -191,6 +280,12 @@ public:
 		m_is_fade = false;
 		m_is_godhook = false;
 		m_is_pandora = false;
+
+		m_last_shot_time = 0.f;
+		m_side_memory.fill({ 0.f, 0.f, false });
+
+		m_lby_update_pending = false;
+		m_lby_update_value = m_lby_update_delta = m_lby_update_time = 0.f;
 
 		if (clear_records)
 			m_records.clear();
