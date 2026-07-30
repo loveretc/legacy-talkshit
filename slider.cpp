@@ -20,17 +20,17 @@ void Slider::draw( ) {
 
 	// draw label.
 	if( m_use_label )
-		render::menu.string( p.x + LABEL_OFFSET, p.y - 2, { 205, 205, 205, m_parent->m_alpha }, m_label );
+		ui::string( ui::font( ), p.x + LABEL_OFFSET, p.y - 2, { 205, 205, 205, m_parent->m_alpha }, m_label );
 
 	// outline.
-	render::rect( p.x + SLIDER_X_OFFSET, p.y + m_offset, m_w - SLIDER_X_OFFSET, SLIDER_HEIGHT, { 15,15,15, m_parent->m_alpha } );
+	ui::rect( p.x + SLIDER_X_OFFSET, p.y + m_offset, m_w - SLIDER_X_OFFSET, SLIDER_HEIGHT, { 15,15,15, m_parent->m_alpha } );
 
 	// background.
-	render::gradient( p.x + SLIDER_X_OFFSET + 1, p.y + m_offset + 1, m_w - SLIDER_X_OFFSET - 2, SLIDER_HEIGHT - 2, { 55, 55, 55, m_parent->m_alpha }, { 70, 70, 70, m_parent->m_alpha } );
+	ui::gradient( p.x + SLIDER_X_OFFSET + 1, p.y + m_offset + 1, m_w - SLIDER_X_OFFSET - 2, SLIDER_HEIGHT - 2, { 55, 55, 55, m_parent->m_alpha }, { 70, 70, 70, m_parent->m_alpha } );
 
 	// bar.
-	render::rect_filled( p.x + SLIDER_X_OFFSET + 1, p.y + m_offset + 1, m_fill - 2, SLIDER_HEIGHT - 2, color );
-	render::rect_filled_fade(p.x + SLIDER_X_OFFSET + 1, p.y + m_offset + 1, m_fill - 2, SLIDER_HEIGHT - 2, { 50, 50, 35, m_parent->m_alpha }, 0, 150);
+	ui::rect_filled( p.x + SLIDER_X_OFFSET + 1, p.y + m_offset + 1, m_fill - 2, SLIDER_HEIGHT - 2, color );
+	ui::rect_filled_fade(p.x + SLIDER_X_OFFSET + 1, p.y + m_offset + 1, m_fill - 2, SLIDER_HEIGHT - 2, { 50, 50, 35, m_parent->m_alpha }, 0, 150);
 
 	// to stringstream.
 	std::wstringstream ss;
@@ -115,21 +115,21 @@ void Slider::draw( ) {
 	}
 
 	// get size.
-	render::FontSize_t size = render::slider.wsize( ss.str( ) );
+	render::FontSize_t size = ui::wsize( ui::font_value( ), ss.str( ) );
 
 	// outline
-	render::slider.wstring(p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2) + 1, (p.y - 1 + m_offset + 1) + 1, { 17, 17, 17, m_parent->m_alpha }, ss.str());
-	render::slider.wstring(p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2) - 1, (p.y - 1 + m_offset + 1) - 1, { 17, 17, 17, m_parent->m_alpha }, ss.str());
-	render::slider.wstring(p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2) + 1, (p.y - 1 + m_offset + 1) - 1, { 17, 17, 17, m_parent->m_alpha }, ss.str());
-	render::slider.wstring(p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2) - 1, (p.y - 1 + m_offset + 1) + 1, { 17, 17, 17, m_parent->m_alpha }, ss.str());
+	ui::wstring( ui::font_value( ), p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2) + 1, (p.y - 1 + m_offset + 1) + 1, { 17, 17, 17, m_parent->m_alpha }, ss.str());
+	ui::wstring( ui::font_value( ), p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2) - 1, (p.y - 1 + m_offset + 1) - 1, { 17, 17, 17, m_parent->m_alpha }, ss.str());
+	ui::wstring( ui::font_value( ), p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2) + 1, (p.y - 1 + m_offset + 1) - 1, { 17, 17, 17, m_parent->m_alpha }, ss.str());
+	ui::wstring( ui::font_value( ), p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2) - 1, (p.y - 1 + m_offset + 1) + 1, { 17, 17, 17, m_parent->m_alpha }, ss.str());
 
-	render::slider.wstring(p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2) + 1, (p.y - 1 + m_offset + 1), { 17, 17, 17, m_parent->m_alpha }, ss.str());
-	render::slider.wstring(p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2) - 1, (p.y - 1 + m_offset + 1), { 17, 17, 17, m_parent->m_alpha }, ss.str());
-	render::slider.wstring(p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2), (p.y - 1 + m_offset + 1) - 1, { 17, 17, 17, m_parent->m_alpha }, ss.str());
-	render::slider.wstring(p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2), (p.y - 1 + m_offset + 1) + 1, { 17, 17, 17, m_parent->m_alpha }, ss.str());
+	ui::wstring( ui::font_value( ), p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2) + 1, (p.y - 1 + m_offset + 1), { 17, 17, 17, m_parent->m_alpha }, ss.str());
+	ui::wstring( ui::font_value( ), p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2) - 1, (p.y - 1 + m_offset + 1), { 17, 17, 17, m_parent->m_alpha }, ss.str());
+	ui::wstring( ui::font_value( ), p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2), (p.y - 1 + m_offset + 1) - 1, { 17, 17, 17, m_parent->m_alpha }, ss.str());
+	ui::wstring( ui::font_value( ), p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2), (p.y - 1 + m_offset + 1) + 1, { 17, 17, 17, m_parent->m_alpha }, ss.str());
 
 	// draw value.
-	render::slider.wstring(p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2), p.y - 1 + m_offset + 1, { 191, 191, 191, m_parent->m_alpha }, ss.str( ) );
+	ui::wstring( ui::font_value( ), p.x + SLIDER_X_OFFSET + m_fill - (size.m_width / 2), p.y - 1 + m_offset + 1, { 191, 191, 191, m_parent->m_alpha }, ss.str( ) );
 
 	// - and + buttons
 	int buttonSize = 5;
@@ -138,11 +138,11 @@ void Slider::draw( ) {
 
 	// draw "-" button
 	if (m_value != m_min)
-		render::menu.string(p.x - buttonSpacingminus, p.y + m_offset + (MINUSHEIGHT - buttonSize) / 2, { 205, 205, 205, m_parent->m_alpha }, "-");
+		ui::string( ui::font( ), p.x - buttonSpacingminus, p.y + m_offset + (MINUSHEIGHT - buttonSize) / 2, { 205, 205, 205, m_parent->m_alpha }, "-");
 
 	// draw "+" button
 	if (m_value != m_max)
-		render::menu.string(p.x + m_w + buttonSpacingplus, p.y + m_offset + (PLUSHEIGHT - buttonSize) / 2, { 205, 205, 205, m_parent->m_alpha }, "+");
+		ui::string( ui::font( ), p.x + m_w + buttonSpacingplus, p.y + m_offset + (PLUSHEIGHT - buttonSize) / 2, { 205, 205, 205, m_parent->m_alpha }, "+");
 }
 
 void Slider::think( ) {
@@ -176,9 +176,7 @@ void Slider::think( ) {
 				m_value -= 0.1f;
 			else
 				m_value -= 1;*/
-
 			m_value -= m_step;
-
 			math::clamp(m_value, m_min, m_max);
 			if (m_callback)
 				m_callback();
@@ -194,9 +192,7 @@ void Slider::think( ) {
 				m_value += 0.1f;
 			else
 				m_value += 1;*/
-
 			m_value += m_step;
-
 			math::clamp(m_value, m_min, m_max);
 			if (m_callback)
 				m_callback();

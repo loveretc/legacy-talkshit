@@ -14,8 +14,12 @@ public:
 		m_show = true;
 	}
 
-	__forceinline void setup(const std::string& label, const std::string& file_id, Color color, Color* ptr = nullptr) {
-		m_label = label;
+	__forceinline void setup(const std::string& label, const std::string& file_id, Color color, Color* ptr = nullptr, bool use_label = false) {
+		m_use_label = use_label;
+
+		if (m_use_label) {
+			m_label = label;
+		}
 		m_file_id = file_id;
 		m_color = color;
 		m_ptr = ptr;

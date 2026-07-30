@@ -173,16 +173,14 @@ void Visuals::Hitmarker() {
 		y = g_cl.m_height,
 		alpha = (1.f - complete) * 240;
 
-	constexpr int a{ 4 };
-	constexpr int b{ a + 5 };
+	const int a{ ui::px(4) };
+	const int b{ a + ui::px(5) };
 	auto color = Color(240, 240, 240, alpha);
 
-	constexpr int line{ 6 };
-
-	render::line(x / 2 - b, y / 2 - b, x / 2 - a, y / 2 - a, color); // left upper
-	render::line(x / 2 - b, y / 2 + b, x / 2 - a, y / 2 + a, color); // left down
-	render::line(x / 2 + b, y / 2 + b, x / 2 + a, y / 2 + a, color); // right down
-	render::line(x / 2 + b, y / 2 - b, x / 2 + a, y / 2 - a, color); // right upper
+	ui::line(x / 2 - b, y / 2 - b, x / 2 - a, y / 2 - a, color); // left upper
+	ui::line(x / 2 - b, y / 2 + b, x / 2 - a, y / 2 + a, color); // left down
+	ui::line(x / 2 + b, y / 2 + b, x / 2 + a, y / 2 + a, color); // right down
+	ui::line(x / 2 + b, y / 2 - b, x / 2 + a, y / 2 - a, color); // right upper
 }
 
 void Visuals::hitmarker_world() {
@@ -220,10 +218,12 @@ void Visuals::hitmarker_world() {
 
 		auto color = Color(240, 240, 240, hitmarkers[i].alpha);
 
-		render::line(pos2D.x + linesize, pos2D.y + linesize, pos2D.x + linedec, pos2D.y + linedec, color);
-		render::line(pos2D.x - linesize, pos2D.y - linesize, pos2D.x - linedec, pos2D.y - linedec, color);
-		render::line(pos2D.x + linesize, pos2D.y - linesize, pos2D.x + linedec, pos2D.y - linedec, color);
-		render::line(pos2D.x - linesize, pos2D.y + linesize, pos2D.x - linedec, pos2D.y + linedec, color);
+		const int size = ui::px(linesize), dec = ui::px(linedec);
+
+		ui::line(pos2D.x + size, pos2D.y + size, pos2D.x + dec, pos2D.y + dec, color);
+		ui::line(pos2D.x - size, pos2D.y - size, pos2D.x - dec, pos2D.y - dec, color);
+		ui::line(pos2D.x + size, pos2D.y - size, pos2D.x + dec, pos2D.y - dec, color);
+		ui::line(pos2D.x - size, pos2D.y + size, pos2D.x - dec, pos2D.y + dec, color);
 	}
 
 	// proceeed
@@ -398,8 +398,9 @@ void Visuals::Spectators( ) {
 	if( !g_menu.main.visuals.spectators.get( ) )
 		return;
 
-	std::vector< std::string > spectators{ XOR("") };
-	int h = render::esp.m_size.m_height;
+	// note - this used to be seeded with an empty string, which drew a blank
+	//        first row and inflated the list height by one line.
+	std::vector< std::string > spectators{ };
 
 	for (int i{ 1 }; i <= g_csgo.m_globals->m_max_clients; ++i) {
 		Player* player = g_csgo.m_entlist->GetClientEntity< Player* >(i);
@@ -425,13 +426,22 @@ void Visuals::Spectators( ) {
 		spectators.push_back(std::string(info.m_name).substr(0, 24));
 	}
 
-	size_t total_size = spectators.size() * (h - 1);
+	if (spectators.empty())
+		return;
 
-	for (size_t i{ }; i < spectators.size(); ++i) {
-		const std::string& name = spectators[i];
+	// stack downwards from just under the watermark, right-aligned to the same
+	// margin so both share an edge.
+	// note - the old code centred the list on y = 30 via
+	//        '30 - (total_size / 2)'. total_size was a size_t, so from six
+	//        spectators on the subtraction wrapped and threw the list off screen.
+	const int line = ui::font_esp().m_size.m_height;
+	int y = Client::WatermarkBottom() + ui::px(6);
 
-		render::esp.string(g_cl.m_width - 15, 30 - (total_size / 2) + (i * (h + 2)),
+	for (const auto& name : spectators) {
+		ui::font_esp().string(g_cl.m_width - ui::px(15), y,
 			{ 255, 255, 255, 255 }, name, render::ALIGN_RIGHT);
+
+		y += line + ui::px(2);
 	}
 }
 
@@ -551,15 +561,24 @@ void Visuals::StatusIndicators() {
 		indicators.push_back(ind);
 	}
 
+	if (g_input.GetKeyState(g_menu.main.aimbot.override.get())) {
+		Indicator_t ind{ };
+		ind.color = Color(150, 200, 60);
+		ind.text = XOR("OVERRIDE");
+		indicators.push_back(ind);
+	}
+
 	//LOL im high 24/7 keep crying youre so mad and I think I know why ahHHAhahaha
 	if (indicators.empty())
 		return;
 
 	// iterate and draw indicators.
+	// anchored to the bottom-left of the design-space canvas so they follow the
+	// interface scale, same as the menu.
 	for (size_t i{ }; i < indicators.size(); ++i) {
 		auto& indicator = indicators[i];
 
-		render::indicator.string(12, g_cl.m_height - 64 - (30 * i), indicator.color, indicator.text);
+		ui::string(ui::font_indicator(), 12, ui::logical_h() - 64 - (30 * (int)i), indicator.color, indicator.text);
 	}
 
 	auto local_player = g_cl.m_local;
@@ -599,8 +618,8 @@ void Visuals::StatusIndicators() {
 		color1337 = { 124,195,13,255 };
 
 	if (!((g_cl.m_buttons & IN_JUMP) || !(g_cl.m_flags & FL_ONGROUND)) && g_menu.main.antiaim.enable.get()) {
-		render::draw_arc(12 + 60, g_cl.m_height - 64 + 23 - 9, 8, 0, 360, 5, { 0,0,0,125 });
-		render::draw_arc(12 + 60, g_cl.m_height - 64 + 23 - 9, 7, 0, 340 * add, 3, color1337);
+		ui::draw_arc(12 + 60, ui::logical_h() - 64 + 23 - 9, 8, 0, 360, 5, { 0,0,0,125 });
+		ui::draw_arc(12 + 60, ui::logical_h() - 64 + 23 - 9, 7, 0, 340 * add, 3, color1337);
 	}
 }
 
@@ -662,13 +681,16 @@ void Visuals::PenetrationCrosshair() {
 	int damage1337 = g_cl.m_pen_data.m_damage;
 
 	if (g_cl.m_pen_data.m_pen || valid_player_hit)
-		render::esp_small.string(x + 3, y + 2, { final_color }, std::to_string(damage1337).c_str(), render::ALIGN_LEFT);
+		ui::font_small().string(x + ui::px(3), y + ui::px(2), { final_color }, std::to_string(damage1337).c_str(), render::ALIGN_LEFT);
 	if (g_cl.m_pen_data.m_damage > 1) {
-		render::rect_filled(x - 1, y, 1, 1, { final_color });
-		render::rect_filled(x, y, 1, 1, { final_color });
-		render::rect_filled(x + 1, y, 1, 1, { final_color });
-		render::rect_filled(x, y + 1, 1, 1, { final_color });
-		render::rect_filled(x, y - 1, 1, 1, { final_color });
+		// the dot cross - one scaled unit per dot, so it stays a plus sign.
+		const int d = ui::px(1);
+
+		render::rect_filled(x - d, y, d, d, { final_color });
+		render::rect_filled(x, y, d, d, { final_color });
+		render::rect_filled(x + d, y, d, d, { final_color });
+		render::rect_filled(x, y + d, d, d, { final_color });
+		render::rect_filled(x, y - d, d, d, { final_color });
 		////shadow
 		//render::rect_filled(x - 2, y, 1, 1, { 0,0, 0, 125 });
 		//render::rect_filled(x + 1, y - 1, 1, 1, { 0,0, 0, 125 });
@@ -789,11 +811,11 @@ void Visuals::DrawProjectile(Weapon* ent) {
 
 	// draw decoy.
 	if (ent->is(HASH("CDecoyProjectile")))
-		render::esp_small.string(screen.x, screen.y, text_col, XOR("DECOY"), render::ALIGN_CENTER);
+		ui::font_small().string(screen.x, screen.y, text_col, XOR("DECOY"), render::ALIGN_CENTER);
 
 	// draw molotov.
 	else if (ent->is(HASH("CMolotovProjectile")))
-		render::esp_small.string(screen.x, screen.y, text_col, XOR("MOLLY"), render::ALIGN_CENTER);
+		ui::font_small().string(screen.x, screen.y, text_col, XOR("MOLLY"), render::ALIGN_CENTER);
 
 	else if (ent->is(HASH("CBaseCSGrenadeProjectile"))) {
 		const model_t* model = ent->GetModel();
@@ -803,10 +825,10 @@ void Visuals::DrawProjectile(Weapon* ent) {
 			std::string name{ ent->GetModel()->m_name };
 
 			if (name.find(XOR("flashbang")) != std::string::npos)
-				render::esp_small.string(screen.x, screen.y, text_col, XOR("FLASH"), render::ALIGN_CENTER);
+				ui::font_small().string(screen.x, screen.y, text_col, XOR("FLASH"), render::ALIGN_CENTER);
 
 			else if (name.find(XOR("fraggrenade")) != std::string::npos)
-				render::esp_small.string(screen.x, screen.y, text_col, XOR("FRAG"), render::ALIGN_CENTER);
+				ui::font_small().string(screen.x, screen.y, text_col, XOR("FRAG"), render::ALIGN_CENTER);
 		}
 	}
 	// find classes.
@@ -820,21 +842,22 @@ void Visuals::DrawProjectile(Weapon* ent) {
 			float radius = 144.f;
 			
 
+			// note - 'radius' here is in world units, not pixels. do not scale it.
 			render::WorldCircleOutline(origin, radius, 1.f, Color(moly_color.r(), moly_color.g(), moly_color.b(), fading_alpha));
 
 			if (g_menu.main.visuals.grenade_warning.get()) {
-				render::circle(screen.x, screen.y - 10, 20, 360, Color(warning_red, 26, 30, warning_alpha));
-				render::draw_arc(screen.x, screen.y - 10, 20, 0, 360 * factor, 1.5, Color(moly_color.r(), moly_color.g(), moly_color.b(), warning_alpha));
-				render::undefeated.string(screen.x + 7, screen.y - 22, { 255,255,255,warning_icon }, XOR("n"), render::ALIGN_RIGHT);
+				render::circle(screen.x, screen.y - ui::px(10), ui::px(20), 360, Color(warning_red, 26, 30, warning_alpha));
+				render::draw_arc(screen.x, screen.y - ui::px(10), ui::px(20), 0, 360 * factor, std::max(1, ui::px(1)), Color(moly_color.r(), moly_color.g(), moly_color.b(), warning_alpha));
+				ui::font_undefeated().string(screen.x + ui::px(7), screen.y - ui::px(22), { 255,255,255,warning_icon }, XOR("n"), render::ALIGN_RIGHT);
 			}
 
 			// render our timer in seconds and our title text
 			if (dist <= 50) {
-				render::round_rect(screen.x - 13 + 1, screen.y + 9, 26, 4, 2, Color(0, 0, 0, 200));
-				render::round_rect(screen.x - 13 + 2, screen.y + 9 + 1, 24 * factor, 2, 2, Color(col_timer.r(), col_timer.g(), col_timer.b(), 200));
+				render::round_rect(screen.x - ui::px(13) + ui::px(1), screen.y + ui::px(9), ui::px(26), ui::px(4), ui::px(2), Color(0, 0, 0, 200));
+				render::round_rect(screen.x - ui::px(13) + ui::px(2), screen.y + ui::px(9) + ui::px(1), ui::px(24) * factor, ui::px(2), ui::px(2), Color(col_timer.r(), col_timer.g(), col_timer.b(), 200));
 
-				render::esp_small.string(screen.x - 13 + 26 * factor, screen.y + 7, text_col, tfm::format(XOR("%.1f"), (spawn_time + 7.031) - g_csgo.m_globals->m_curtime), render::ALIGN_CENTER);
-				render::esp_small.string(screen.x, screen.y, text_col, XOR("FIRE"), render::ALIGN_CENTER);
+				ui::font_small().string(screen.x - ui::px(13) + ui::px(26) * factor, screen.y + ui::px(7), text_col, tfm::format(XOR("%.1f"), (spawn_time + 7.031) - g_csgo.m_globals->m_curtime), render::ALIGN_CENTER);
+				ui::font_small().string(screen.x, screen.y, text_col, XOR("FIRE"), render::ALIGN_CENTER);
 			}
 		}
 	}
@@ -850,21 +873,22 @@ void Visuals::DrawProjectile(Weapon* ent) {
 			int starting_alpha = 5;
 			
 			if (g_menu.main.visuals.grenade_warning.get()) {
-				render::circle(screen.x, screen.y - 10, 20, 360, Color(26, 26, 30, warning_alpha));
-				render::draw_arc(screen.x, screen.y - 10, 20, 0, 360 * factor, 1.5, Color(smoke_color.r(), smoke_color.g(), smoke_color.b(), warning_alpha));
-				render::undefeated.string(screen.x + 7, screen.y - 22, { 255,255,255,warning_icon }, XOR("k"), render::ALIGN_RIGHT);
+				render::circle(screen.x, screen.y - ui::px(10), ui::px(20), 360, Color(26, 26, 30, warning_alpha));
+				render::draw_arc(screen.x, screen.y - ui::px(10), ui::px(20), 0, 360 * factor, std::max(1, ui::px(1)), Color(smoke_color.r(), smoke_color.g(), smoke_color.b(), warning_alpha));
+				ui::font_undefeated().string(screen.x + ui::px(7), screen.y - ui::px(22), { 255,255,255,warning_icon }, XOR("k"), render::ALIGN_RIGHT);
 			}
 
+			// note - 'radius' here is in world units, not pixels. do not scale it.
 			render::WorldCircleOutline(origin, radius, 1.f, Color(smoke_color.r(), smoke_color.g(), smoke_color.b(), fading_alpha));
 
 			// render our timer in seconds and our title text
 			if (dist <= 50) {
 				// render our bg then timer colored bar
-				render::round_rect(screen.x - 13 + 1, screen.y + 9, 26, 4, 2, Color(0, 0, 0, 200));
-				render::round_rect(screen.x - 13 + 2, screen.y + 9 + 1, 24 * factor, 2, 2, Color(col_timer.r(), col_timer.g(), col_timer.b(), 200));
+				render::round_rect(screen.x - ui::px(13) + ui::px(1), screen.y + ui::px(9), ui::px(26), ui::px(4), ui::px(2), Color(0, 0, 0, 200));
+				render::round_rect(screen.x - ui::px(13) + ui::px(2), screen.y + ui::px(9) + ui::px(1), ui::px(24) * factor, ui::px(2), ui::px(2), Color(col_timer.r(), col_timer.g(), col_timer.b(), 200));
 
-				render::esp_small.string(screen.x - 13 + 26 * factor, screen.y + 7, text_col, tfm::format(XOR("%.1f"), (spawn_time + 18.04125) - g_csgo.m_globals->m_curtime), render::ALIGN_CENTER);
-				render::esp_small.string(screen.x, screen.y, text_col, XOR("SMOKE"), render::ALIGN_CENTER);
+				ui::font_small().string(screen.x - ui::px(13) + ui::px(26) * factor, screen.y + ui::px(7), text_col, tfm::format(XOR("%.1f"), (spawn_time + 18.04125) - g_csgo.m_globals->m_curtime), render::ALIGN_CENTER);
+				ui::font_small().string(screen.x, screen.y, text_col, XOR("SMOKE"), render::ALIGN_CENTER);
 			}
 		}
 	}
@@ -941,7 +965,7 @@ void Visuals::DrawItem(Weapon* item) {
 
 	// render bomb in green.
 	if (item->is(HASH("CC4")))
-		render::esp_small.string(screen.x, screen.y, {150, 200, 60, 0xb4 }, XOR("BOMB"), render::ALIGN_CENTER);
+		ui::font_small().string(screen.x, screen.y, {150, 200, 60, 0xb4 }, XOR("BOMB"), render::ALIGN_CENTER);
 
 	if (item->is(HASH("CC4")))
 		return;
@@ -953,10 +977,10 @@ void Visuals::DrawItem(Weapon* item) {
 	std::transform(std::execution::par, name.begin(), name.end(), name.begin(), ::toupper);
 
 	if (g_menu.main.visuals.dropped_weapons.get(0))
-		render::esp_small.string(screen.x, screen.y, Color(col.r(), col.g(), col.b(), alpha1), name, render::ALIGN_CENTER);
+		ui::font_small().string(screen.x, screen.y, Color(col.r(), col.g(), col.b(), alpha1), name, render::ALIGN_CENTER);
 
 	if (g_menu.main.visuals.dropped_weapons.get(1))
-		render::esp_small.string(screen.x, screen.y - 10, Color(col.r(), col.g(), col.b(), alpha1), distance, render::ALIGN_CENTER);
+		ui::font_small().string(screen.x, screen.y - ui::px(10), Color(col.r(), col.g(), col.b(), alpha1), distance, render::ALIGN_CENTER);
 
 	if (g_menu.main.visuals.dropped_weapons.get(2)){
 
@@ -973,11 +997,12 @@ void Visuals::DrawItem(Weapon* item) {
 		const int current = item->m_iClip1();
 		const int max = data->m_max_clip1;
 		const float scale = (float)current / max;
-		const int width_ = render::esp_small.size(name.c_str()).m_width;
+		const int width_ = ui::font_small().size(name.c_str()).m_width;
 	
-		int bar = (int)std::round( ( width_ - 1 ) * scale);
-		render::rect_filled(screen.x - int( width_ / 2.f ), screen.y + 12, render::esp_small.size(name.c_str()).m_width + 1, 4, Color(0, 0, 0, alpha1));
-		render::rect_filled(screen.x - int( width_ / 2.f ) + 1, screen.y + 1 + 12, bar, 2, Color(col.r(), col.g(), col.b(), alpha1));
+		// width_ already comes off the scaled font, so the bar length follows.
+		int bar = (int)std::round( ( width_ - ui::px(1) ) * scale);
+		render::rect_filled(screen.x - int( width_ / 2.f ), screen.y + ui::px(12), width_ + ui::px(1), ui::px(4), Color(0, 0, 0, alpha1));
+		render::rect_filled(screen.x - int( width_ / 2.f ) + ui::px(1), screen.y + ui::px(1) + ui::px(12), bar, ui::px(2), Color(col.r(), col.g(), col.b(), alpha1));
 	}
 }
 
@@ -1217,11 +1242,12 @@ void Visuals::DrawPlayer( Player* player ) {
 	const bool box_esp = ( enemy && g_menu.main.players.box.get( ) ) || ( !enemy && g_menu.main.players.teammates.get( ) );
 
 	// render box if specified.
+	// the bounds are real px out of WorldToScreen, only the stroke needs scaling.
 	if (box_esp) {
 		if (dormant)
-			render::rect_outlined(box.x, box.y, box.w, box.h, Color(210, 210, 210, alpha), { 0,0,0, low_alpha });
+			ui::frame_outlined(box.x, box.y, box.w, box.h, Color(210, 210, 210, alpha), { 0,0,0, low_alpha });
 		else
-			render::rect_outlined(box.x, box.y, box.w, box.h, Color(color.r(), color.g(), color.b(), color.a()).alpha(alpha), Color(0, 0, 0, color.a()).alpha( low_alpha ) );
+			ui::frame_outlined(box.x, box.y, box.w, box.h, Color(color.r(), color.g(), color.b(), color.a()).alpha(alpha), Color(0, 0, 0, color.a()).alpha( low_alpha ) );
 	}
 
 	// is name esp enabled for this player.
@@ -1247,9 +1273,9 @@ void Visuals::DrawPlayer( Player* player ) {
 		//});
 
 		if (dormant)
-			render::esp.string(box.x + box.w / 2, box.y - render::esp.m_size.m_height, Color(210, 210, 210, low_alpha), name, render::ALIGN_CENTER);
+			ui::font_esp().string(box.x + box.w / 2, box.y - ui::font_esp().m_size.m_height, Color(210, 210, 210, low_alpha), name, render::ALIGN_CENTER);
 		else
-			render::esp.string(box.x + box.w / 2, box.y - render::esp.m_size.m_height, Color(clr.r(), clr.g(), clr.b(), clr.a()).alpha(low_alpha), name, render::ALIGN_CENTER);
+			ui::font_esp().string(box.x + box.w / 2, box.y - ui::font_esp().m_size.m_height, Color(clr.r(), clr.g(), clr.b(), clr.a()).alpha(low_alpha), name, render::ALIGN_CENTER);
 		
 	}
 
@@ -1257,8 +1283,8 @@ void Visuals::DrawPlayer( Player* player ) {
 	bool health_esp = ( enemy && g_menu.main.players.health.get(  ) ) || ( !enemy && g_menu.main.players.teammates.get(  ) );
 
 	if( health_esp ) {
-		int y = box.y + 1;
-		int h = box.h - 2;
+		int y = box.y + ui::px(1);
+		int h = box.h - ui::px(2);
 
 
 		int hp = std::min(100, player->m_iHealth());
@@ -1279,17 +1305,20 @@ void Visuals::DrawPlayer( Player* player ) {
 		int fill = ( int ) std::round( hp * h / 100.f );
 
 		// render background.
-		render::rect_filled( box.x - 6, y - 2, 4, h + 4, { 0, 0, 0, low_alpha } );
+		render::rect_filled( box.x - ui::px(6), y - ui::px(2), ui::px(4), h + ui::px(4), { 0, 0, 0, low_alpha } );
 
 		// render actual bar.
+		// note - this used to be render::rect ( an outline ). at 2px wide the
+		//        outline covered both columns so it looked filled, but once the
+		//        width scales it would go hollow. rect_filled is identical at 1x.
 		if (dormant)
-			render::rect( box.x - 5, y - 1 + h - fill, 2, fill + 2, Color(210,210,210,alpha));
+			render::rect_filled( box.x - ui::px(5), y - ui::px(1) + h - fill, ui::px(2), fill + ui::px(2), Color(210,210,210,alpha));
 		else
-			render::rect(box.x - 5, y - 1 + h - fill, 2, fill + 2, { r, g, 0, alpha });
+			render::rect_filled(box.x - ui::px(5), y - ui::px(1) + h - fill, ui::px(2), fill + ui::px(2), { r, g, 0, alpha });
 
 		// if hp is below max, draw a string.
 		if (player->m_iHealth() <= 92) {
-			render::esp_small.string(box.x - 5, y + (h - fill) - 5, { 255, 255, 255, low_alpha }, std::to_string(hp), render::ALIGN_CENTER);
+			ui::font_small().string(box.x - ui::px(5), y + (h - fill) - ui::px(5), { 255, 255, 255, low_alpha }, std::to_string(hp), render::ALIGN_CENTER);
 		}
 	}
 
@@ -1448,10 +1477,11 @@ void Visuals::DrawPlayer( Player* player ) {
 		}
 
 		// iterate flags.
+		// the row pitch comes off the scaled font, so it follows automatically.
 		for (size_t i{ }; i < flags.size(); ++i) {
 			const auto& f = flags[i];
-			int offset = i * (render::menu.m_size.m_height) + 1;
-			render::esp_small.string(box.x - 1 + box.w + 3, box.y + 1 + offset - 2, f.second, f.first);
+			int offset = (int)i * (ui::font().m_size.m_height) + ui::px(1);
+			ui::font_small().string(box.x - ui::px(1) + box.w + ui::px(3), box.y + ui::px(1) + offset - ui::px(2), f.second, f.first);
 		}
 	}
 
@@ -1479,15 +1509,15 @@ void Visuals::DrawPlayer( Player* player ) {
 
 						if( width > 0.f ) {
 							// draw.
-							render::rect_filled( box.x - 1, box.y + box.h + 2, box.w + 2, 4, { 10, 10, 10, low_alpha } );
+							render::rect_filled( box.x - ui::px(1), box.y + box.h + ui::px(2), box.w + ui::px(2), ui::px(4), { 10, 10, 10, low_alpha } );
 
 							Color clr = g_menu.main.players.lby_update_color.get( );
 							clr.a( ) = alpha;
-							render::rect( box.x + 1, box.y + box.h + 3, width, 2, clr );
+							render::rect_filled( box.x + ui::px(1), box.y + box.h + ui::px(3), width, ui::px(2), clr );
 
 							// move down the offset to make room for the next bar.
-							offset += 5;
-							offset3 += 1;
+							offset += ui::px(5);
+							offset3 += ui::px(1);
 						}
 					}
 				}
@@ -1524,26 +1554,27 @@ void Visuals::DrawPlayer( Player* player ) {
 							scale = (float)current / max;
 
 						// relative to bar.
-						bar = (int)std::round((box.w - 2) * scale);
+						bar = (int)std::round((box.w - ui::px(2)) * scale);
 
 						// draw.
-						render::rect_filled(box.x - 1, box.y + box.h + 2 + offset, box.w + 2, 4, { 0, 0, 0, low_alpha });
+						render::rect_filled(box.x - ui::px(1), box.y + box.h + ui::px(2) + offset, box.w + ui::px(2), ui::px(4), { 0, 0, 0, low_alpha });
 
 						Color clr = g_menu.main.players.ammo_color.get();
 						clr.a() = alpha;
+						// rect -> rect_filled for the same reason as the health bar.
 						if (dormant)
-							render::rect(box.x, box.y + box.h + 3 + offset, bar + 2, 2, Color(210, 210, 210, alpha));
+							render::rect_filled(box.x, box.y + box.h + ui::px(3) + offset, bar + ui::px(2), ui::px(2), Color(210, 210, 210, alpha));
 						else
-							render::rect(box.x, box.y + box.h + 3 + offset, bar + 2, 2, clr);
+							render::rect_filled(box.x, box.y + box.h + ui::px(3) + offset, bar + ui::px(2), ui::px(2), clr);
 
 						// less then a 5th of the bullets left.
 						if (current > 0 && current <= int(std::round(max / 5)) && !reload)
 							if (dormant)
-								render::esp_small.string(box.x + bar, box.y + box.h + offset, { 255, 255, 255, low_alpha }, std::to_string(current), render::ALIGN_CENTER);
+								ui::font_small().string(box.x + bar, box.y + box.h + offset, { 255, 255, 255, low_alpha }, std::to_string(current), render::ALIGN_CENTER);
 							else
-								render::esp_small.string(box.x + bar, box.y + box.h + offset, { 255, 255, 255, 210 }, std::to_string(current), render::ALIGN_CENTER);
+								ui::font_small().string(box.x + bar, box.y + box.h + offset, { 255, 255, 255, 210 }, std::to_string(current), render::ALIGN_CENTER);
 
-						offset += 6;
+						offset += ui::px(6);
 					}
 
 					if (g_menu.main.players.distance.get()) {
@@ -1554,7 +1585,7 @@ void Visuals::DrawPlayer( Player* player ) {
 							distance1337 = 0;
 
 						if (dist > 0) {
-							distance1337 = 9 + offset3;
+							distance1337 = ui::px(9) + offset3;
 							if (dist > 5) {
 								while (!(dist % 5 == 0)) {
 									dist = dist - 1;
@@ -1567,18 +1598,18 @@ void Visuals::DrawPlayer( Player* player ) {
 								distance = tfm::format(XOR("%i FT"), dist);
 
 							if (dormant)
-								render::esp_small.string(box.x + box.w / 2, box.y + box.h + offset + offset3, { 255, 255, 255, low_alpha }, distance, render::ALIGN_CENTER);
+								ui::font_small().string(box.x + box.w / 2, box.y + box.h + offset + offset3, { 255, 255, 255, low_alpha }, distance, render::ALIGN_CENTER);
 							else
-								render::esp_small.string(box.x + box.w / 2, box.y + box.h + offset + offset3, { 255, 255, 255, 210 }, distance, render::ALIGN_CENTER);
+								ui::font_small().string(box.x + box.w / 2, box.y + box.h + offset + offset3, { 255, 255, 255, 210 }, distance, render::ALIGN_CENTER);
 						}
-						offset += render::esp_small.m_size.m_height;
+						offset += ui::font_small().m_size.m_height;
 					}
 
 					Color wpn_clr = g_menu.main.players.weaponcolor.get();
 
 					// text.
 					if (g_menu.main.players.weapontext.get()) {
-						offset -= 9;
+						offset -= ui::px(9);
 						// construct std::string instance of localized weapon name.
 
 						std::string name{ weapon->GetLocalizedName() };
@@ -1588,36 +1619,36 @@ void Visuals::DrawPlayer( Player* player ) {
 
 						int move;
 						if (!g_menu.main.players.distance.get())
-							move = 9;
+							move = ui::px(9);
 						else
 							move = 0;
 
 						if (dormant)
-							render::esp_small.string(box.x + box.w / 2, box.y + box.h + move + offset + distance1337, { 255, 255, 255, low_alpha }, name, render::ALIGN_CENTER);
+							ui::font_small().string(box.x + box.w / 2, box.y + box.h + move + offset + distance1337, { 255, 255, 255, low_alpha }, name, render::ALIGN_CENTER);
 						else
-							render::esp_small.string(box.x + box.w / 2, box.y + box.h + move + offset + distance1337, { wpn_clr.r(), wpn_clr.g(), wpn_clr.b(), 210 }, name, render::ALIGN_CENTER);
+							ui::font_small().string(box.x + box.w / 2, box.y + box.h + move + offset + distance1337, { wpn_clr.r(), wpn_clr.g(), wpn_clr.b(), 210 }, name, render::ALIGN_CENTER);
 						
-						offset += render::esp_small.m_size.m_height;
+						offset += ui::font_small().m_size.m_height;
 					}
 
 					// icons.
 					if (g_menu.main.players.weaponicon.get()) {
-						offset -= 4;
+						offset -= ui::px(4);
 						// icons are super fat..
 						// move them back up.
 
 						int move;
 						if (!g_menu.main.players.distance.get())
-							move = 9;
+							move = ui::px(9);
 						else
 							move = 0;
 
 						if (dormant)
-							render::icon.string(box.x + box.w / 2, box.y + box.h + move + offset - offset1 + distance1337 + 2, Color(210, 210, 210, low_alpha), GetWeaponIcon(weapon->m_iItemDefinitionIndex()), render::ALIGN_CENTER);
+							ui::font_icon().string(box.x + box.w / 2, box.y + box.h + move + offset - offset1 + distance1337 + ui::px(2), Color(210, 210, 210, low_alpha), GetWeaponIcon(weapon->m_iItemDefinitionIndex()), render::ALIGN_CENTER);
 						else
-							render::icon.string(box.x + box.w / 2, box.y + box.h + move + offset - offset1 + distance1337 + 2, Color(wpn_clr.r(), wpn_clr.g(), wpn_clr.b(), 210), GetWeaponIcon(weapon->m_iItemDefinitionIndex()), render::ALIGN_CENTER);
+							ui::font_icon().string(box.x + box.w / 2, box.y + box.h + move + offset - offset1 + distance1337 + ui::px(2), Color(wpn_clr.r(), wpn_clr.g(), wpn_clr.b(), 210), GetWeaponIcon(weapon->m_iItemDefinitionIndex()), render::ALIGN_CENTER);
 					
-						offset += render::icon.m_size.m_height;
+						offset += ui::font_icon().m_size.m_height;
 					}
 				}
 			}
@@ -1874,21 +1905,23 @@ void Visuals::DrawPlantedC4() {
 		defuse_color = Color(255, 12, 0, 120);
 
 	if (defuser != (-1)) {
+		// 'height' is the real screen height, the bar spans it - only its width
+		// is a fixed pixel amount.
 		if (defuse_percentage >= 0.f && defuse_percentage <= 1.f) {
-			render::rect_filled(0, 0, 22, height, Color(0, 0, 0, 120));
-			render::rect_filled(1, 0, 20, value_defuse, defuse_color);
+			render::rect_filled(0, 0, ui::px(22), height, Color(0, 0, 0, 120));
+			render::rect_filled(ui::px(1), 0, ui::px(20), value_defuse, defuse_color);
 		}
 	}
 
 	// draw overlay
 	if (time_to_explode > 0.f)
-		render::indicator.string(2, 5, timer_color, time_str, render::ALIGN_LEFT);
+		ui::font_indicator().string(ui::px(2), ui::px(5), timer_color, time_str, render::ALIGN_LEFT);
 
 	if (g_cl.m_local->alive())
 		if (final_dmg >= g_cl.m_local->m_iHealth())
-			render::indicator.string(2, render::indicator.m_size.m_height, damage_color, "FATAL", render::ALIGN_LEFT);
+			ui::font_indicator().string(ui::px(2), ui::font_indicator().m_size.m_height, damage_color, "FATAL", render::ALIGN_LEFT);
 		else if (final_dmg > 0)
-			render::indicator.string(2, render::indicator.m_size.m_height, damage_color, damage_str, render::ALIGN_LEFT);
+			ui::font_indicator().string(ui::px(2), ui::font_indicator().m_size.m_height, damage_color, damage_str, render::ALIGN_LEFT);
 }
 
 
@@ -2075,7 +2108,7 @@ void Visuals::DrawSkeleton(Player* player, int opacity) {
 
 		// world to screen both the bone parent bone then draw.
 		if (render::WorldToScreen(bone_pos, bone_pos_screen) && render::WorldToScreen(parent_pos, parent_pos_screen))
-			render::line(bone_pos_screen.x, bone_pos_screen.y, parent_pos_screen.x, parent_pos_screen.y, determine_clr(player, clr, opacity).malpha(g_menu.main.players.skeleton_enemy.get().a()));
+			ui::line(bone_pos_screen.x, bone_pos_screen.y, parent_pos_screen.x, parent_pos_screen.y, determine_clr(player, clr, opacity).malpha(g_menu.main.players.skeleton_enemy.get().a()));
 	}
 }
 
@@ -2385,7 +2418,7 @@ void Visuals::DrawHistorySkeleton(Player* player, int opacity) {
 
 		// world to screen both the bone parent bone then draw.
 		if (render::WorldToScreen(bone_pos, bone_pos_screen) && render::WorldToScreen(parent_pos, parent_pos_screen))
-			render::line(bone_pos_screen.x, bone_pos_screen.y, parent_pos_screen.x, parent_pos_screen.y, determine_clr(player, clr, opacity).malpha(g_menu.main.players.skeleton_enemy.get().a()));
+			ui::line(bone_pos_screen.x, bone_pos_screen.y, parent_pos_screen.x, parent_pos_screen.y, determine_clr(player, clr, opacity).malpha(g_menu.main.players.skeleton_enemy.get().a()));
 	}
 }
 
@@ -2412,8 +2445,8 @@ void Visuals::IndicateAngles() {
 
 		if (render::WorldToScreen(real_pos, draw_tmp))
 		{
-			render::line(tmp.x, tmp.y, draw_tmp.x, draw_tmp.y, colors::transparent_red );
-			render::esp_small.string(draw_tmp.x, draw_tmp.y, { colors::transparent_red }, "FAKE", render::ALIGN_LEFT);
+			ui::line(tmp.x, tmp.y, draw_tmp.x, draw_tmp.y, colors::transparent_red );
+			ui::font_small().string(draw_tmp.x, draw_tmp.y, { colors::transparent_red }, "FAKE", render::ALIGN_LEFT);
 		}
 
 		if (g_menu.main.antiaim.fake_yaw.get())
@@ -2422,8 +2455,8 @@ void Visuals::IndicateAngles() {
 
 			if (render::WorldToScreen(fake_pos, draw_tmp))
 			{
-				render::line(tmp.x, tmp.y, draw_tmp.x, draw_tmp.y, { colors::transparent_green });
-				render::esp_small.string(draw_tmp.x, draw_tmp.y, { colors::transparent_green }, "REAL", render::ALIGN_LEFT);
+				ui::line(tmp.x, tmp.y, draw_tmp.x, draw_tmp.y, { colors::transparent_green });
+				ui::font_small().string(draw_tmp.x, draw_tmp.y, { colors::transparent_green }, "REAL", render::ALIGN_LEFT);
 			}
 		}
 
@@ -2435,8 +2468,8 @@ void Visuals::IndicateAngles() {
 
 			if (render::WorldToScreen(lby_pos, draw_tmp))
 			{
-				render::line(tmp.x, tmp.y, draw_tmp.x, draw_tmp.y, { colors::light_blue });
-				render::esp_small.string(draw_tmp.x, draw_tmp.y, { colors::light_blue }, "LBY", render::ALIGN_LEFT);
+				ui::line(tmp.x, tmp.y, draw_tmp.x, draw_tmp.y, { colors::light_blue });
+				ui::font_small().string(draw_tmp.x, draw_tmp.y, { colors::light_blue }, "LBY", render::ALIGN_LEFT);
 			}
 		}
 	}

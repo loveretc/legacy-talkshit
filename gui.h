@@ -10,10 +10,16 @@ public:
 	Point m_drag_offset;
 	Color m_color{ colors::white };
 	Color copied_color;
+	bool  clrp_usinglabel;
 
 public:
 	void think( );
 	void draw( );
+
+	// true while a widget is swallowing raw keyboard input - an edit box has
+	// focus, or a keybind is waiting for a key. the game must not see those
+	// keystrokes, otherwise typing a skin id also switches weapons.
+	bool IsCapturingKeys( ) const;
 
 	// registers a new form.
 	__forceinline void RegisterForm( Form* form, int key = -1 ) {

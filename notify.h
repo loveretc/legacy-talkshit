@@ -32,7 +32,8 @@ public:
 
 	// modelled after 'CConPanel::DrawNotify' and 'CConPanel::ShouldDraw'
 	void think() {
-		int		x{ 8 }, y{ 5 }, size{ render::console.m_size.m_height + 1 };
+		// the row pitch comes off the scaled font, only the margins need px( ).
+		int		x{ ui::px( 8 ) }, y{ ui::px( 5 ) }, size{ ui::font_console( ).m_size.m_height + ui::px( 1 ) };
 		Color	color;
 		float	left;
 
@@ -71,7 +72,7 @@ public:
 			else
 				color.a() = 255;
 
-			render::console.string(x, y, color, notify->m_text);
+			ui::font_console( ).string(x, y, color, notify->m_text);
 			y += size;
 		}
 	}

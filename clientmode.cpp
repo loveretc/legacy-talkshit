@@ -26,9 +26,31 @@ void Hooks::OverrideView(CViewSetup* view) {
 bool Hooks::CreateMove( float time, CUserCmd* cmd ) {
 	Stack   stack;
 	bool    ret;
+	ang_t   view_backup;
+
+	// remember where the player is actually looking before the engine folds this
+	// frame's mouse delta into it.
+	g_csgo.m_engine->GetViewAngles( view_backup );
 
 	// let original run first.
 	ret = g_hooks.m_client_mode.GetOldMethod< CreateMove_t >( IClientMode::CREATEMOVE )( this, time, cmd );
+
+	// the menu owns the mouse while it is open. undo the view rotation the engine
+	// just applied and drop the deltas, but leave the movement keys untouched so
+	// walking / jumping / ducking keeps working.
+	if( g_gui.m_open ) {
+		cmd->m_view_angles = view_backup;
+		cmd->m_mousedx     = 0;
+		cmd->m_mousedy     = 0;
+
+		g_csgo.m_engine->SetViewAngles( view_backup );
+
+		// this has to happen before OnTick, because DoMove runs prediction and
+		// CPrediction::Update -> RunCommand -> ItemPostFrame fires the weapon off
+		// this bit. stripping it any later still plays the local fire animation
+		// even though the shot never reaches the server.
+		cmd->m_buttons &= ~( IN_ATTACK | IN_ATTACK2 );
+	}
 
 	// called from CInput::ExtraMouseSample -> return original.
 	if( !cmd->m_command_number )

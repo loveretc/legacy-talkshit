@@ -44,6 +44,10 @@ void render::init( ) {
 
 	//LastFontName = "undefeated"; // weapon icon
 	//g_csgo.m_surface->SetFontGlyphSet(F::Icons = g_csgo.m_surface->CreateFont(), XOR("undefeated"), 13, FW_NORMAL, NULL, NULL, FONTFLAG_ANTIALIAS | FONTFLAG_DROPSHADOW);
+
+	// the gui keeps its own scaled fonts. we just recreated every game font,
+	// so its cached handles are stale now - ui::think rebuilds them.
+	ui::invalidate( );
 }
 
 bool render::WorldToScreen( const vec3_t& world, vec2_t& screen ) {

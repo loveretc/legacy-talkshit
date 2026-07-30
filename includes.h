@@ -74,6 +74,7 @@ using ulong_t = unsigned long;
 #include "gamerules.h"
 #include "hooks.h"
 #include "render.h"
+#include "uiscale.h"
 #include "pred.h"
 #include "lagrecord.h"
 #include "visuals.h"

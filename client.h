@@ -34,6 +34,10 @@ public:
 	void DoMove();
 	void RemoveSkybox();
 	void DrawHUD();
+
+	// bottom edge of the watermark box, in real px. used to stack the spectator
+	// list underneath it.
+	static int WatermarkBottom();
 	void UpdateInformation();
 	void MouseFix(CUserCmd* cmd);
 	void SetAngles();

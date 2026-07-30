@@ -965,6 +965,12 @@ void Aimbot::think() {
 	// do all startup routines.
 	init();
 
+	// the menu owns the mouse and EndMove strips the attack buttons, so this tick
+	// cannot fire. scanning anyway would only queue shot records for shots that
+	// never happen and spam the miss log.
+	if (g_gui.m_open)
+		return;
+
 	// sanity.
 	if (!g_cl.m_weapon || !g_cl.m_weapon_info)
 		return;

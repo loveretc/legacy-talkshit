@@ -6,21 +6,21 @@ void Edit::draw( ) {
 	Point p{ area.x + m_pos.x, area.y + m_pos.y };
 
 	// draw label.
-	render::menu.string( p.x + EDIT_X_OFFSET, p.y - 2, { 205, 205, 205, m_parent->m_alpha }, m_label );
+	ui::string( ui::font( ), p.x + EDIT_X_OFFSET, p.y - 2, { 205, 205, 205, m_parent->m_alpha }, m_label );
 
 	// box outline.
-	render::rect( p.x + EDIT_X_OFFSET, p.y + 15, m_w - EDIT_X_OFFSET, EDIT_BOX_HEIGHT, { 0, 0, 0, m_parent->m_alpha } );
+	ui::rect( p.x + EDIT_X_OFFSET, p.y + 15, m_w - EDIT_X_OFFSET, EDIT_BOX_HEIGHT, { 0, 0, 0, m_parent->m_alpha } );
 
 	// inner blob
 	// todo; gradient?
-	render::rect_filled( p.x + EDIT_X_OFFSET + 1, p.y + 15 + 1, m_w - EDIT_X_OFFSET - 2, EDIT_BOX_HEIGHT - 2, { 41, 41, 41, m_parent->m_alpha } );
+	ui::rect_filled( p.x + EDIT_X_OFFSET + 1, p.y + 15 + 1, m_w - EDIT_X_OFFSET - 2, EDIT_BOX_HEIGHT - 2, { 41, 41, 41, m_parent->m_alpha } );
 
-	render::menu.string( p.x + EDIT_X_OFFSET + EDIT_ITEM_X_OFFSET, p.y + 15 + 4, { 152, 152, 152, m_parent->m_alpha }, m_text );
+	ui::string( ui::font( ), p.x + EDIT_X_OFFSET + EDIT_ITEM_X_OFFSET, p.y + 15 + 4, { 152, 152, 152, m_parent->m_alpha }, m_text );
 
-	render::FontSize_t size = render::menu.size( m_text );
+	render::FontSize_t size = ui::size( ui::font( ), m_text );
 
 	if( m_typing && ( g_winapi.GetTickCount( ) / 500 ) % 2 )
-		render::rect_filled( p.x + EDIT_X_OFFSET + EDIT_ITEM_X_OFFSET + size.m_width + 1, p.y + 15 + 13, 6, 2, { 152, 152, 152, m_parent->m_alpha } );
+		ui::rect_filled( p.x + EDIT_X_OFFSET + EDIT_ITEM_X_OFFSET + size.m_width + 1, p.y + 15 + 13, 6, 2, { 152, 152, 152, m_parent->m_alpha } );
 }
 
 void Edit::think( ) {

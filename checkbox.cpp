@@ -9,35 +9,35 @@ void Checkbox::draw( ) {
 	color.a( ) = m_parent->m_alpha;
 
 	// render black outline on checkbox.
-	render::rect( p.x, p.y, CHECKBOX_SIZE, CHECKBOX_SIZE, { 10, 10, 10, m_parent->m_alpha } );
+	ui::rect( p.x, p.y, CHECKBOX_SIZE, CHECKBOX_SIZE, { 10, 10, 10, m_parent->m_alpha } );
 
 	// render checkbox title.
 	if (m_use_label) {
 		if (m_safe)
-			render::menu.string(p.x + LABEL_OFFSET, p.y - 3, { 205, 205, 205, m_parent->m_alpha }, m_label);
+			ui::string( ui::font( ), p.x + LABEL_OFFSET, p.y - 3, { 205, 205, 205, m_parent->m_alpha }, m_label);
 		else
-			render::menu.string(p.x + LABEL_OFFSET, p.y - 3, { 205, 205, 103, m_parent->m_alpha }, m_label);
+			ui::string( ui::font( ), p.x + LABEL_OFFSET, p.y - 3, { 205, 205, 103, m_parent->m_alpha }, m_label);
 	}
 
 	// render border.
-	render::rect( p.x + 1, p.y + 1, CHECKBOX_SIZE - 2, CHECKBOX_SIZE - 2, { 0, 0, 0, m_parent->m_alpha } );
+	ui::rect( p.x + 1, p.y + 1, CHECKBOX_SIZE - 2, CHECKBOX_SIZE - 2, { 0, 0, 0, m_parent->m_alpha } );
 
 	// render checked.
 	if( m_checked ) {
-		render::rect_filled( p.x + 1, p.y + 1, CHECKBOX_SIZE - 2, CHECKBOX_SIZE - 2, color );
-		render::rect_filled_fade( p.x + 1, p.y + 1, CHECKBOX_SIZE - 2, CHECKBOX_SIZE - 2, { 50, 50, 35, m_parent->m_alpha }, 0, 150 );
+		ui::rect_filled( p.x + 1, p.y + 1, CHECKBOX_SIZE - 2, CHECKBOX_SIZE - 2, color );
+		ui::rect_filled_fade( p.x + 1, p.y + 1, CHECKBOX_SIZE - 2, CHECKBOX_SIZE - 2, { 50, 50, 35, m_parent->m_alpha }, 0, 150 );
 	}
 
 	else
-		render::gradient( p.x + 1, p.y + 1, CHECKBOX_SIZE - 2, CHECKBOX_SIZE - 2, { 75, 75, 75, m_parent->m_alpha }, { 50, 50, 50, m_parent->m_alpha } );
+		ui::gradient( p.x + 1, p.y + 1, CHECKBOX_SIZE - 2, CHECKBOX_SIZE - 2, { 75, 75, 75, m_parent->m_alpha }, { 50, 50, 50, m_parent->m_alpha } );
 
-	//render::rect( el.x + m_pos.x, el.y + m_pos.y, m_w, m_pos.h, { 255, 0, 0 } );
+	//ui::rect( el.x + m_pos.x, el.y + m_pos.y, m_w, m_pos.h, { 255, 0, 0 } );
 }
 
 void Checkbox::think( ) {
 	// set the click area to the length of the string, so we can also press the string to toggle.
 	if( m_use_label )
-		m_w = LABEL_OFFSET + render::menu.size( m_label ).m_width;
+		m_w = LABEL_OFFSET + ui::size( ui::font( ), m_label ).m_width;
 }
 
 void Checkbox::click( ) {

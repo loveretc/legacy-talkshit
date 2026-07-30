@@ -183,9 +183,9 @@ bool c_grenade_prediction::data_t::draw() const
     
 
     if (dist < 71) {
-        render::circle(prev_screen.x, prev_screen.y - 10, 20, 360, Color(warning_red, 26, 30, warning_alpha));
-        render::draw_arc(prev_screen.x, prev_screen.y - 10, 20, 0, 360 * percent, 2, Color(255, 255, 255, warning_alpha));
-        render::undefeated.string(prev_screen.x - 7, prev_screen.y - 22, { 255,255,255,warning_icon }, index_to_grenade_name_icon(m_index));
+        render::circle(prev_screen.x, prev_screen.y - ui::px(10), ui::px(20), 360, Color(warning_red, 26, 30, warning_alpha));
+        render::draw_arc(prev_screen.x, prev_screen.y - ui::px(10), ui::px(20), 0, 360 * percent, std::max(1, ui::px(2)), Color(255, 255, 255, warning_alpha));
+        ui::font_undefeated().string(prev_screen.x - ui::px(7), prev_screen.y - ui::px(22), { 255,255,255,warning_icon }, index_to_grenade_name_icon(m_index));
     }
 
 
@@ -234,9 +234,9 @@ bool c_grenade_prediction::data_t::draw() const
         rotate_point(position, vec2_t(wm, hm), false, entity_angle.y);
 
         if (dist < 71) {
-            render::circle(position.x, position.y - 10, 20, 360, Color(warning_red, 26, 30, warning_alpha));
-            render::draw_arc(position.x, position.y - 10, 20, 0, 360 * percent, 2, Color(255, 255, 255, warning_alpha));
-            render::undefeated.string(position.x - 7, position.y - 22, { 255,255,255,warning_icon }, index_to_grenade_name_icon(m_index));
+            render::circle(position.x, position.y - ui::px(10), ui::px(20), 360, Color(warning_red, 26, 30, warning_alpha));
+            render::draw_arc(position.x, position.y - ui::px(10), ui::px(20), 0, 360 * percent, std::max(1, ui::px(2)), Color(255, 255, 255, warning_alpha));
+            ui::font_undefeated().string(position.x - ui::px(7), position.y - ui::px(22), { 255,255,255,warning_icon }, index_to_grenade_name_icon(m_index));
         }
 
     }

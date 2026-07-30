@@ -4,6 +4,7 @@ class AimbotTab : public Tab {
 public:
 	// col1.
 	Checkbox	  enable;
+	//Dropdown	  weapon_type;
 	Checkbox	  silent;
 	MultiDropdown hitbox;
 	MultiDropdown multipoint;
@@ -52,6 +53,9 @@ public:
 	void init() {
 		// title.
 		SetTitle(XOR("Aimbot"));
+
+		//weapon_type.setup(XOR("Weapon type"), XOR("weapon_type"), { XOR("Global"), XOR("Auto"), XOR("Scout"), XOR("AWP"), XOR("R8 Revolver"), XOR("Deagle"), XOR("Pistols") });
+		//RegisterElement(&weapon_type);
 
 		enable.setup(XOR("Enabled"), XOR("enable"));
 		RegisterElement(&enable);
@@ -112,11 +116,12 @@ public:
 		zoom.setup(XOR("Automatic scope"), XOR("zoom"));
 		RegisterElement(&zoom);
 
+		autopeek_active.setup(XOR(""), XOR("autoactive"), colors::red);
+		RegisterElement(&autopeek_active);
+
 		quickpeekassist.setup(XOR("Quick peek assist"), XOR("quickpeekassist"));
 		RegisterElement(&quickpeekassist);
 
-		autopeek_active.setup(XOR("Color"), XOR("autoactive"), colors::red);
-		RegisterElement(&autopeek_active);
 
 		optimizations.setup(XOR("Low FPS mitigations"), XOR("optizations"), { XOR("Limit players per tick"), XOR("Lower hit chance precision"), XOR("Disable multipoint: arms"), XOR("Disable multipoint: feet"), XOR("Disable hitbox: feet") });
 		RegisterElement(&optimizations);
@@ -294,12 +299,12 @@ public:
 		yaw_stand.AddShowCallback(callbacks::IsAntiAimModeStand);
 		RegisterElement(&yaw_stand);
 
-		jitter_range_stand.setup("", XOR("jitter_range_stnd"), 1.f, 180.f, false, 0, 45.f, 5.f, XOR(L"°"));
+		jitter_range_stand.setup("", XOR("jitter_range_stnd"), 1.f, 180.f, false, 0, 45.f, 5.f, XOR(L"Â°"));
 		jitter_range_stand.AddShowCallback(callbacks::IsAntiAimModeStand);
 		jitter_range_stand.AddShowCallback(callbacks::IsStandYawJitter);
 		RegisterElement(&jitter_range_stand);
 
-		rot_range_stand.setup("", XOR("rot_range_stnd"), 0.f, 360.f, false, 0, 360.f, 5.f, XOR(L"°"));
+		rot_range_stand.setup("", XOR("rot_range_stnd"), 0.f, 360.f, false, 0, 360.f, 5.f, XOR(L"Â°"));
 		rot_range_stand.AddShowCallback(callbacks::IsAntiAimModeStand);
 		rot_range_stand.AddShowCallback(callbacks::IsStandYawRotate);
 		RegisterElement(&rot_range_stand);
@@ -325,7 +330,7 @@ public:
 		dir_time_stand.AddShowCallback(callbacks::IsStandDirAuto);
 		RegisterElement(&dir_time_stand);
 
-		dir_custom_stand.setup("", XOR("dir_custom_stnd"), -180.f, 180.f, false, 0, 0.f, 5.f, XOR(L"°"));
+		dir_custom_stand.setup("", XOR("dir_custom_stnd"), -180.f, 180.f, false, 0, 0.f, 5.f, XOR(L"Â°"));
 		dir_custom_stand.AddShowCallback(callbacks::IsAntiAimModeStand);
 		dir_custom_stand.AddShowCallback(callbacks::HasStandYaw);
 		dir_custom_stand.AddShowCallback(callbacks::IsStandDirCustom);
@@ -336,22 +341,22 @@ public:
 		body_yaw.AddShowCallback(callbacks::HasStandYaw);
 		RegisterElement(&body_yaw);
 
-		body_yaw_twist.setup("", XOR("body_yaw_twist"), -180.f, 180.f, false, 0, 45.f, 1.f, XOR(L"°"));
+		body_yaw_twist.setup("", XOR("body_yaw_twist"), -180.f, 180.f, false, 0, 45.f, 1.f, XOR(L"Â°"));
 		body_yaw_twist.AddShowCallback(callbacks::IsAntiAimModeStand);
 		body_yaw_twist.AddShowCallback(callbacks::IsCustomTwist);
 		RegisterElement(&body_yaw_twist);
 
-		body_yaw_twist_double.setup("Flick angle", XOR("custom_twist_double"), -180.f, 180.f, true, 0, 45.f, 1.f, XOR(L"°"));
+		body_yaw_twist_double.setup("Flick angle", XOR("custom_twist_double"), -180.f, 180.f, true, 0, 45.f, 1.f, XOR(L"Â°"));
 		body_yaw_twist_double.AddShowCallback(callbacks::IsAntiAimModeStand);
 		body_yaw_twist_double.AddShowCallback(callbacks::IsCustomTwist);
 		RegisterElement(&body_yaw_twist_double);
 
-		body_yaw_angle.setup("", XOR("custom_static"), -180.f, 180.f, false, 0, 45.f, 1.f, XOR(L"°"));
+		body_yaw_angle.setup("", XOR("custom_static"), -180.f, 180.f, false, 0, 45.f, 1.f, XOR(L"Â°"));
 		body_yaw_angle.AddShowCallback(callbacks::IsAntiAimModeStand);
 		body_yaw_angle.AddShowCallback(callbacks::IsCustomBody);
 		RegisterElement(&body_yaw_angle);
 
-		body_yaw_switch.setup("", XOR("custom_switch"), -180.f, 180.f, false, 0, 45.f, 1.f, XOR(L"°"));
+		body_yaw_switch.setup("", XOR("custom_switch"), -180.f, 180.f, false, 0, 45.f, 1.f, XOR(L"Â°"));
 		body_yaw_switch.AddShowCallback(callbacks::IsAntiAimModeStand);
 		body_yaw_switch.AddShowCallback(callbacks::IsSwitchFakeBody);
 		RegisterElement(&body_yaw_switch);
@@ -365,12 +370,12 @@ public:
 		yaw_walk.AddShowCallback(callbacks::IsAntiAimModeWalk);
 		RegisterElement(&yaw_walk);
 
-		jitter_range_walk.setup("", XOR("jitter_range_walk"), 1.f, 180.f, false, 0, 45.f, 5.f, XOR(L"°"));
+		jitter_range_walk.setup("", XOR("jitter_range_walk"), 1.f, 180.f, false, 0, 45.f, 5.f, XOR(L"Â°"));
 		jitter_range_walk.AddShowCallback(callbacks::IsAntiAimModeWalk);
 		jitter_range_walk.AddShowCallback(callbacks::IsWalkYawJitter);
 		RegisterElement(&jitter_range_walk);
 
-		rot_range_walk.setup("", XOR("rot_range_walk"), 0.f, 360.f, false, 0, 360.f, 5.f, XOR(L"°"));
+		rot_range_walk.setup("", XOR("rot_range_walk"), 0.f, 360.f, false, 0, 360.f, 5.f, XOR(L"Â°"));
 		rot_range_walk.AddShowCallback(callbacks::IsAntiAimModeWalk);
 		rot_range_walk.AddShowCallback(callbacks::IsWalkYawRotate);
 		RegisterElement(&rot_range_walk);
@@ -396,7 +401,7 @@ public:
 		dir_time_walk.AddShowCallback(callbacks::IsWalkDirAuto);
 		RegisterElement(&dir_time_walk);
 
-		dir_custom_walk.setup("", XOR("dir_custom_walk"), -180.f, 180.f, false, 0, 0.f, 5.f, XOR(L"°"));
+		dir_custom_walk.setup("", XOR("dir_custom_walk"), -180.f, 180.f, false, 0, 0.f, 5.f, XOR(L"Â°"));
 		dir_custom_walk.AddShowCallback(callbacks::IsAntiAimModeWalk);
 		dir_custom_walk.AddShowCallback(callbacks::WalkHasYaw);
 		dir_custom_walk.AddShowCallback(callbacks::IsWalkDirCustom);
@@ -411,12 +416,12 @@ public:
 		yaw_air.AddShowCallback(callbacks::IsAntiAimModeAir);
 		RegisterElement(&yaw_air);
 
-		jitter_range_air.setup("", XOR("jitter_range_air"), 1.f, 180.f, false, 0, 45.f, 5.f, XOR(L"°"));
+		jitter_range_air.setup("", XOR("jitter_range_air"), 1.f, 180.f, false, 0, 45.f, 5.f, XOR(L"Â°"));
 		jitter_range_air.AddShowCallback(callbacks::IsAntiAimModeAir);
 		jitter_range_air.AddShowCallback(callbacks::IsAirYawJitter);
 		RegisterElement(&jitter_range_air);
 
-		rot_range_air.setup("", XOR("rot_range_air"), 0.f, 360.f, false, 0, 360.f, 5.f, XOR(L"°"));
+		rot_range_air.setup("", XOR("rot_range_air"), 0.f, 360.f, false, 0, 360.f, 5.f, XOR(L"Â°"));
 		rot_range_air.AddShowCallback(callbacks::IsAntiAimModeAir);
 		rot_range_air.AddShowCallback(callbacks::IsAirYawRotate);
 		RegisterElement(&rot_range_air);
@@ -442,7 +447,7 @@ public:
 		dir_time_air.AddShowCallback(callbacks::IsAirDirAuto);
 		RegisterElement(&dir_time_air);
 
-		dir_custom_air.setup("", XOR("dir_custom_air"), -180.f, 180.f, false, 0, 0.f, 5.f, XOR(L"°"));
+		dir_custom_air.setup("", XOR("dir_custom_air"), -180.f, 180.f, false, 0, 0.f, 5.f, XOR(L"Â°"));
 		dir_custom_air.AddShowCallback(callbacks::IsAntiAimModeAir);
 		dir_custom_air.AddShowCallback(callbacks::AirHasYaw);
 		dir_custom_air.AddShowCallback(callbacks::IsAirDirCustom);
@@ -460,11 +465,11 @@ public:
 		fake_yaw.setup(XOR("Fake yaw"), XOR("fake_yaw"), { XOR("Off"), XOR("Default"), XOR("Relative"), XOR("Jitter"), XOR("Rotate"), XOR("Random"), XOR("Local view"), XOR("LBY match") });
 		RegisterElement(&fake_yaw, 1);
 
-		fake_relative.setup("", XOR("fake_relative"), -90.f, 90.f, false, 0, 0.f, 5.f, XOR(L"°"));
+		fake_relative.setup("", XOR("fake_relative"), -90.f, 90.f, false, 0, 0.f, 5.f, XOR(L"Â°"));
 		fake_relative.AddShowCallback(callbacks::IsFakeAntiAimRelative);
 		RegisterElement(&fake_relative, 1);
 
-		fake_jitter_range.setup("", XOR("fake_jitter_range"), 1.f, 90.f, false, 0, 0.f, 5.f, XOR(L"°"));
+		fake_jitter_range.setup("", XOR("fake_jitter_range"), 1.f, 90.f, false, 0, 0.f, 5.f, XOR(L"Â°"));
 		fake_jitter_range.AddShowCallback(callbacks::IsFakeAntiAimJitter);
 		RegisterElement(&fake_jitter_range, 1);
 
@@ -498,12 +503,11 @@ public:
 		fakelag_breaklc.setup(XOR("Break lag compensation"), XOR("fakelag_breaklc"));
 		RegisterElement(&fakelag_breaklc, 1);
 
+		fakelag_clr.setup(XOR(""), XOR("fakelag_clr"), colors::burgundy);
+		RegisterElement(&fakelag_clr, 1);
+
 		fakelag_chams.setup(XOR("Visualize fakelag"), XOR("fakelag_chams"));
 		RegisterElement(&fakelag_chams, 1);
-
-		fakelag_clr.setup(XOR("Color"), XOR("fakelag_clr"), colors::burgundy);
-		fakelag_clr.AddShowCallback(callbacks::VisualizeFLon);
-		RegisterElement(&fakelag_clr, 1);
 
 		fakelag_silent_aim.setup(XOR("Force silent aim"), XOR("fakelag_silent_aim"), true, false, false);
 		RegisterElement(&fakelag_silent_aim, 1);
@@ -647,22 +651,22 @@ public:
 		dormant.setup(XOR("Dormant"), XOR("dormant"));
 		RegisterElement(&dormant);
 
+		box_enemy.setup(XOR("Bounding box color"), XOR("box_enemy"), { 255, 255, 255, 180 });
+		//box_enemy.AddShowCallback(callbacks::boxon);
+		RegisterElement(&box_enemy);
+
 		box.setup(XOR("Bounding box"), XOR("box"));
 		RegisterElement(&box);
-
-		box_enemy.setup(XOR("Bounding box color"), XOR("box_enemy"), { 255, 255, 255, 180 });
-		box_enemy.AddShowCallback(callbacks::boxon);
-		RegisterElement(&box_enemy);
 
 		health.setup(XOR("Health bar"), XOR("health"));
 		RegisterElement(&health);
 
+		name_color.setup(XOR("Name color"), XOR("name_color"), { 255, 255, 255 });
+		//name_color.AddShowCallback(callbacks::nameon);
+		RegisterElement(&name_color);
+
 		name.setup(XOR("Name"), XOR("name"));
 		RegisterElement(&name);
-
-		name_color.setup(XOR("Name color"), XOR("name_color"), { 255, 255, 255 });
-		name_color.AddShowCallback(callbacks::nameon);
-		RegisterElement(&name_color);
 
 		flags_enemy.setup(XOR("Flags"), XOR("flags_enemy"), { XOR("Money"), XOR("Kevlar"), XOR("Scoped"), XOR("Blind"), XOR("Reloading"), XOR("Bomb"), XOR("Fake angles"), XOR("Lethal"), XOR("Exploit"), XOR("Hit")});
 		RegisterElement(&flags_enemy);
@@ -670,36 +674,36 @@ public:
 		weapontext.setup(XOR("Weapon text"), XOR("weapontext"));
 		RegisterElement(&weapontext);
 
+		weaponcolor.setup(XOR("Weapon color"), XOR("weaponcolor"), { 255, 255, 255 });
+		//weaponcolor.AddShowCallback(callbacks::weaponiconon);
+		RegisterElement(&weaponcolor);
+
 		weaponicon.setup(XOR("Weapon icon"), XOR("weaponicon"));
 		RegisterElement(&weaponicon);
 
-		weaponcolor.setup(XOR("Weapon color"), XOR("weaponcolor"), { 255, 255, 255 });
-		weaponcolor.AddShowCallback(callbacks::weaponiconon);
-		RegisterElement(&weaponcolor);
+		ammo_color.setup(XOR("Ammo color"), XOR("ammo_color"), { 80, 140, 200, 235 });
+		//ammo_color.AddShowCallback(callbacks::ammpespon);
+		RegisterElement(&ammo_color);
 
 		ammo.setup(XOR("Ammo"), XOR("ammo"));
 		RegisterElement(&ammo);
 
-		ammo_color.setup(XOR("Ammo color"), XOR("ammo_color"), { 80, 140, 200, 235 });
-		ammo_color.AddShowCallback(callbacks::ammpespon);
-		RegisterElement(&ammo_color);
-
 		distance.setup(XOR("Distance"), XOR("distance"));
 		RegisterElement(&distance);
+
+		lby_update_color.setup(XOR("LBY timer color"), XOR("lby_update_color"), colors::burgundy);
+		//lby_update_color.AddShowCallback(callbacks::lbytimeron);
+		RegisterElement(&lby_update_color);
 
 		lby_update.setup(XOR("LBY timer"), XOR("lby_update"));
 		RegisterElement(&lby_update);
 
-		lby_update_color.setup(XOR("LBY timer color"), XOR("lby_update_color"), colors::burgundy);
-		lby_update_color.AddShowCallback(callbacks::lbytimeron);
-		RegisterElement(&lby_update_color);
+		glow_enemy.setup(XOR("Glow color"), XOR("glow_enemy"), { 180, 60, 120 });
+		//glow_enemy.AddShowCallback(callbacks::glowon);
+		RegisterElement(&glow_enemy);
 
 		glow.setup(XOR("Glow"), XOR("glow"));
 		RegisterElement(&glow);
-
-		glow_enemy.setup(XOR("Glow color"), XOR("glow_enemy"), { 180, 60, 120 });
-		glow_enemy.AddShowCallback(callbacks::glowon);
-		RegisterElement(&glow_enemy);
 
 		glow_blend.setup("", XOR("glow_blend"), 0.f, 100.f, false, 0, 58.f, 1.f, XOR(L"%"));
 		glow_blend.AddShowCallback(callbacks::glowon);
@@ -712,16 +716,20 @@ public:
 		hitmarker_sound.AddShowCallback(callbacks::IsHitmarker);
 		RegisterElement(&hitmarker_sound);
 
+		skeleton_enemy.setup(XOR("Skeleton color"), XOR("skeleton_enemy"), { 255, 255, 170 });
+		//skeleton_enemy.AddShowCallback(callbacks::skeleton);
+		RegisterElement(&skeleton_enemy);
+
 		skeleton.setup(XOR("Skeleton"), XOR("skeleton"));
 		RegisterElement(&skeleton);
-
-		skeleton_enemy.setup(XOR("Skeleton color"), XOR("skeleton_enemy"), { 255, 255, 170 });
-		skeleton_enemy.AddShowCallback(callbacks::skeleton);
-		RegisterElement(&skeleton_enemy);
 
 		skeleton_alpha.setup("", XOR("skeleton_alpha"), 0.f, 255, false, 0, 200, 1.f, XOR(L""));
 		skeleton_alpha.AddShowCallback(callbacks::skeleton);
 		RegisterElement(&skeleton_alpha);
+
+		offscreen_color.setup(XOR("Arrows color"), XOR("offscreen_color"), colors::white);
+		//offscreen_color.AddShowCallback(callbacks::outofpov);
+		RegisterElement(&offscreen_color);
 
 		offscreen.setup(XOR("Out of FOV arrows"), XOR("offscreen"));
 		RegisterElement(&offscreen);
@@ -734,16 +742,14 @@ public:
 		offscreen_distance.AddShowCallback(callbacks::outofpov);
 		RegisterElement(&offscreen_distance);
 
-		offscreen_color.setup(XOR("Arrows color"), XOR("offscreen_color"), colors::white);
-		offscreen_color.AddShowCallback(callbacks::outofpov);
-		RegisterElement(&offscreen_color);
+		footstepcol.setup(XOR("Beam color"), XOR("footstepcol"), { 250, 60, 60 });
+		//footstepcol.AddShowCallback(callbacks::soundesp);
+		RegisterElement(&footstepcol);
 
 		footstep.setup(XOR("Visualize sounds"), XOR("footstep"));
 		RegisterElement(&footstep);
 
-		footstepcol.setup(XOR("Beam color"), XOR("footstepcol"), { 250, 60, 60 });
-		footstepcol.AddShowCallback(callbacks::soundesp);
-		RegisterElement(&footstepcol);
+
 
 		// col2
 		chams_entity_selection.setup("Colored model", XOR("chams_entity_selection"), { XOR("Local player"), XOR("Enemies"), XOR("Teammates"), XOR("Shadow"), XOR("Fake angles"), XOR("On hit"), XOR("Weapon") });
@@ -955,6 +961,7 @@ public:
 	Slider	      c4_blend;
 	Slider        tracers_color_alpha;
 	Colorpicker   tracers_color;
+	Colorpicker   tracers_color_hit;
 	Checkbox      disableteam;
 	MultiDropdown	  world;
 	Slider		  transparent_props_amount;
@@ -1051,15 +1058,19 @@ public:
 		c4_blend.AddShowCallback(callbacks::bombon);
 		RegisterElement(&c4_blend);
 
-		tracers.setup(XOR("Grenade trajectory"), XOR("tracers"));
-		RegisterElement(&tracers);
-
 		tracers_color.setup(XOR("Color"), XOR("tracers_color"), { 50, 150, 255 });
 		tracers_color.AddShowCallback(callbacks::trajectoryon);
 		RegisterElement(&tracers_color);
 
 		grenade_warning.setup(XOR("Grenade proximity warning"), XOR("warning_prox"));
 		RegisterElement(&grenade_warning);
+
+		tracers.setup(XOR("Grenade trajectory"), XOR("tracers"));
+		RegisterElement(&tracers);
+
+		tracers_color_hit.setup(XOR("Color (on-hit)"), XOR("tracers_color_hit"), { 139, 201, 56 }, nullptr, true);
+		tracers_color_hit.AddShowCallback(callbacks::trajectoryon);
+		RegisterElement(&tracers_color_hit);
 
 		spectators.setup(XOR("Spectators"), XOR("spectators"));
 		RegisterElement(&spectators);
@@ -2322,6 +2333,7 @@ public:
 	Keybind edgejump;
 
 	// col2.
+	Dropdown scaling;
 	Colorpicker menu_color;
 	Slider testlo25;
 	Checkbox autoaccept;
@@ -2357,13 +2369,13 @@ public:
 	void init( ) {
 		SetTitle( XOR( "Miscellaneous" ) );
 
-		fov_amt.setup("Override FOV", XOR("fov_amt"), 60.f, 140.f, true, 0, 90.f, 1.f, XOR(L"°"));
+		fov_amt.setup("Override FOV", XOR("fov_amt"), 60.f, 140.f, true, 0, 90.f, 1.f, XOR(L"Â°"));
 		RegisterElement(&fov_amt);
 
 		zoom_amt.setup("Override zoom FOV", XOR("zoom_amt"), 20.f, 100.f, true, 0, 60, 1.f, XOR(L"%"));
 		RegisterElement(&zoom_amt);
 
-		viewmodel_amt.setup("Override viewmodel", XOR("viewmodel_amt"), 63.f, 125.f, true, 0, 63.f, 1.f, XOR(L"°"));
+		viewmodel_amt.setup("Override viewmodel", XOR("viewmodel_amt"), 63.f, 125.f, true, 0, 63.f, 1.f, XOR(L"Â°"));
 		RegisterElement(&viewmodel_amt);
 
 		enableautobuy.setup(XOR("Auto buy"), XOR("enableautobuy"));
@@ -2482,7 +2494,12 @@ public:
 		killsay.setup(XOR("Killsay"), XOR("killsay"));
 		RegisterElement(&killsay, 1);
 
-		menu_color.setup(XOR("Menu color"), XOR("menu_color"), { 151, 200, 60 }, &g_gui.m_color);
+		// item order must match ui::ScaleMode.
+		scaling.setup(XOR("DPI scale"), XOR("gui_scaling"),
+			{ XOR("Automatic"), XOR("100%"), XOR("125%"), XOR("150%"), XOR("175%"), XOR("200%") });
+		RegisterElement(&scaling, 1);
+
+		menu_color.setup(XOR("Menu color"), XOR("menu_color"), { 151, 200, 60 }, &g_gui.m_color, true);
 		RegisterElement(&menu_color, 1);
 
 		dumper.setup(XOR("Dump voice data"), XOR("vcdatadbg"));

@@ -38,23 +38,23 @@ void Keybind::draw( ) {
 
 	// draw label.
 	if (m_safe)
-		render::menu.string(p.x + KEYBIND_X_OFFSET, p.y - 2, { 205, 205, 205, m_parent->m_alpha }, m_label);
+		ui::string( ui::font( ), p.x + KEYBIND_X_OFFSET, p.y - 2, { 205, 205, 205, m_parent->m_alpha }, m_label);
 	else
-		render::menu.string(p.x + KEYBIND_X_OFFSET, p.y - 2, { 205, 205, 103, m_parent->m_alpha }, m_label);
+		ui::string( ui::font( ), p.x + KEYBIND_X_OFFSET, p.y - 2, { 205, 205, 103, m_parent->m_alpha }, m_label);
 
 	if (!m_set && !(m_key >= 0 && m_key <= 0xFE))
-		render::esp_small.string(p.x + KEYBIND_X_OFFSET + KEYBIND_ITEM_X_OFFSET + 130, p.y + 15 + 4 - 19, { 90, 90, 90, m_parent->m_alpha }, XOR("[-]"));
+		ui::string( ui::font_small( ), p.x + KEYBIND_X_OFFSET + KEYBIND_ITEM_X_OFFSET + 130, p.y + 15 + 4 - 19, { 90, 90, 90, m_parent->m_alpha }, XOR("[-]"));
 
 	if (!m_set && m_key >= 0 && m_key <= 0xFE)
-		render::esp_small.string(p.x + KEYBIND_X_OFFSET + KEYBIND_ITEM_X_OFFSET + 130, p.y + 15 + 4 - 19, { 90, 90, 90, m_parent->m_alpha }, XOR(""));
+		ui::string( ui::font_small( ), p.x + KEYBIND_X_OFFSET + KEYBIND_ITEM_X_OFFSET + 130, p.y + 15 + 4 - 19, { 90, 90, 90, m_parent->m_alpha }, XOR(""));
 
 	// todo; animate with '...'
 	if (m_set)
-		render::esp_small.string(p.x + KEYBIND_X_OFFSET + KEYBIND_ITEM_X_OFFSET + 130, p.y + 15 + 4 - 19, { 255, 16, 16, m_parent->m_alpha }, XOR("[-]"));
+		ui::string( ui::font_small( ), p.x + KEYBIND_X_OFFSET + KEYBIND_ITEM_X_OFFSET + 130, p.y + 15 + 4 - 19, { 255, 16, 16, m_parent->m_alpha }, XOR("[-]"));
 
 	// we have a key assigned.
 	else if (m_key >= 0 && m_key <= 0xFE)
-		render::esp_small.string(p.x + KEYBIND_X_OFFSET + KEYBIND_ITEM_X_OFFSET + 130, p.y + 15 + 4 - 19, { 90, 90, 90, m_parent->m_alpha }, keynames[m_key]);
+		ui::string( ui::font_small( ), p.x + KEYBIND_X_OFFSET + KEYBIND_ITEM_X_OFFSET + 130, p.y + 15 + 4 - 19, { 90, 90, 90, m_parent->m_alpha }, keynames[m_key]);
 }
 
 void Keybind::think( ) {

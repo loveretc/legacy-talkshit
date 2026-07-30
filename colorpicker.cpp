@@ -100,10 +100,10 @@ void Colorpicker::draw() {
 	Point p{ area.x + m_pos.x, area.y + m_pos.y };
 
 	// label.
-	render::menu.string(p.x + LABEL_OFFSET, p.y - 2, { 205, 205, 205, m_parent->m_alpha }, m_label);
+	ui::string( ui::font( ), p.x + LABEL_OFFSET, p.y - 2, { 205, 205, 205, m_parent->m_alpha }, m_label);
 
 	// outline.
-	render::rect(p.x + m_w - COLORPICKER_WIDTH, p.y, COLORPICKER_WIDTH, COlORPICKER_HEIGHT, { 0, 0, 0, m_parent->m_alpha });
+	ui::rect(p.x + m_w - COLORPICKER_WIDTH, p.y, COLORPICKER_WIDTH, COlORPICKER_HEIGHT, { 0, 0, 0, m_parent->m_alpha });
 
 	// make a copy of the color.
 	Color preview = m_color;
@@ -112,10 +112,10 @@ void Colorpicker::draw() {
 	preview.a() = m_parent->m_alpha;
 
 	// draw preview window.
-	render::rect_filled(p.x + m_w - COLORPICKER_WIDTH + 1, p.y + 1, COLORPICKER_WIDTH - 2, COlORPICKER_HEIGHT - 2, preview);
+	ui::rect_filled(p.x + m_w - COLORPICKER_WIDTH + 1, p.y + 1, COLORPICKER_WIDTH - 2, COlORPICKER_HEIGHT - 2, preview);
 
 	// fade / shine.
-	render::rect_filled_fade(p.x + m_w - COLORPICKER_WIDTH + 1, p.y + 1, COLORPICKER_WIDTH - 2, COlORPICKER_HEIGHT - 2, { 50, 50, 35, m_parent->m_alpha }, 0, 150);
+	ui::rect_filled_fade(p.x + m_w - COLORPICKER_WIDTH + 1, p.y + 1, COLORPICKER_WIDTH - 2, COlORPICKER_HEIGHT - 2, { 50, 50, 35, m_parent->m_alpha }, 0, 150);
 
 	/* lets do the open boss */ {
 		/* animate when openning */
@@ -133,22 +133,22 @@ void Colorpicker::draw() {
 			int width = w;
 
 			/* drawing */
-			render::rect_filled(x - 1, cp_y, width + 2, t_height + 2, Color(60, 60, 60, m_parent->m_alpha));
-			render::rect_filled(x, cp_y + 1, width, t_height, Color(40, 40, 40, m_parent->m_alpha));
+			ui::rect_filled(x - 1, cp_y, width + 2, t_height + 2, Color(60, 60, 60, m_parent->m_alpha));
+			ui::rect_filled(x, cp_y + 1, width, t_height, Color(40, 40, 40, m_parent->m_alpha));
 
 			// now we render the rounded color preview
 			const float colpalwidth = m_w - 8;
 			const float colpalwidth2 = m_w - 22;
 			const float colpalheight = m_h + 2;
 
-			render::rect_filled(x + width - 14, cp_y + 5, colpalheight, colpalheight, m_color);
-			render::rect(x + width - 14, cp_y + 5, colpalheight, colpalheight, Color(26, 26, 26, m_parent->m_alpha));;
+			ui::rect_filled(x + width - 14, cp_y + 5, colpalheight, colpalheight, m_color);
+			ui::rect(x + width - 14, cp_y + 5, colpalheight, colpalheight, Color(26, 26, 26, m_parent->m_alpha));;
 
 			// colorpall
 			for (int i = 0; i < colpalwidth2; ++i) {
-				render::rect_filled(p.x + i + 4, cp_y + 5, 1, colpalheight, Color().hsb_to_rgb(i / colpalwidth2, 1.f, 1.f));
+				ui::rect_filled(p.x + i + 4, cp_y + 5, 1, colpalheight, Color().hsb_to_rgb(i / colpalwidth2, 1.f, 1.f));
 			}
-			render::rect(x + 4, cp_y + 5, colpalwidth2, colpalheight, Color(60, 60, 60, m_parent->m_alpha));
+			ui::rect(x + 4, cp_y + 5, colpalwidth2, colpalheight, Color(60, 60, 60, m_parent->m_alpha));
 
 			const auto shade_height = (t_height - colpalheight - 18);
 			const int box_size = 3;
@@ -171,18 +171,18 @@ void Colorpicker::draw() {
 					float hue, saturation, value;
 					rgb_to_hsv(float(m_color.r()) / 255.f, float(m_color.g()) / 255.f, float(m_color.b()) / 255.f, hue, saturation, value);
 					const auto pixel_color = Color().hsb_to_rgb(hue, saturation_percent, brightness_percent);
-					render::rect_filled(p.x + c + 4, p.y + 16 + m_h + colpalheight + 4 + r, size_x, size_y, pixel_color);
+					ui::rect_filled(p.x + c + 4, p.y + 16 + m_h + colpalheight + 4 + r, size_x, size_y, pixel_color);
 				}
 			}
 
-			render::rect(p.x + 4, p.y + 28 + m_h, colpalwidth + 2, shade_height + 1, Color(60, 60, 60, m_parent->m_alpha));
+			ui::rect(p.x + 4, p.y + 28 + m_h, colpalwidth + 2, shade_height + 1, Color(60, 60, 60, m_parent->m_alpha));
 
 			// alpha bar
 			int alpha_x = x + 4;
 			int alpha_y = y + 27 + m_h + shade_height + 3;
 
-			render::rect_filled(x + 4, y + 27 + m_h + shade_height + 3, colpalwidth, colpalheight - 2, Color(m_color.r(), m_color.g(), m_color.b(), m_parent->m_alpha));
-			render::rect(alpha_x, alpha_y, colpalwidth, colpalheight - 2, Color(60, 60, 60, m_parent->m_alpha));
+			ui::rect_filled(x + 4, y + 27 + m_h + shade_height + 3, colpalwidth, colpalheight - 2, Color(m_color.r(), m_color.g(), m_color.b(), m_parent->m_alpha));
+			ui::rect(alpha_x, alpha_y, colpalwidth, colpalheight - 2, Color(60, 60, 60, m_parent->m_alpha));
 
 			// drag hue system
 			if (DoDragHue) {
@@ -235,18 +235,18 @@ void Colorpicker::draw() {
 			{
 				ColorPos.x = math::clamp2(ColorPos.x, 0.f, colpalwidth - 5);
 				ColorPos.y = math::clamp2(ColorPos.y, 0.f, shade_height + 35);
-				render::rect(ColorPos.x + p.x, ColorPos.y + p.y, 5, 5, Color(43, 44, 46, 255));
+				ui::rect(ColorPos.x + p.x, ColorPos.y + p.y, 5, 5, Color(43, 44, 46, 255));
 			}
 
 			if (m_hue_pos.x && m_hue_pos.y)
 			{
 				m_hue_pos.x = math::clamp2(m_hue_pos.x, 2.f, colpalwidth2 - 2);
-				render::rect(m_hue_pos.x - 2 + (p.x + 4), cp_y + 5, 4, colpalheight, Color(43, 44, 46, 255));
+				ui::rect(m_hue_pos.x - 2 + (p.x + 4), cp_y + 5, 4, colpalheight, Color(43, 44, 46, 255));
 			}
 
 			if (m_alpha_pos.x && m_alpha_pos.y) {
 				m_alpha_pos.x = math::clamp2(m_alpha_pos.x, 2.f, colpalwidth - 2);
-				render::rect(m_alpha_pos.x - 2 + (alpha_x), alpha_y, 4, colpalheight - 2, Color(43, 44, 46, 255));
+				ui::rect(m_alpha_pos.x - 2 + (alpha_x), alpha_y, 4, colpalheight - 2, Color(43, 44, 46, 255));
 			}
 
 			// override alpha
@@ -260,12 +260,12 @@ void Colorpicker::draw() {
 		if (copy_paste) {
 			m_open = false;
 
-			auto height = render::menu.size("Copy").m_width + 2 + render::menu.size("Paste").m_width;
-			render::rect_filled(p.x + m_w - COLORPICKER_WIDTH + 1, p.y + 10, height + 18, 20, Color(60, 60, 60, m_parent->m_alpha));
-			render::rect_filled(p.x + m_w - COLORPICKER_WIDTH + 2, p.y + 11, height + 16, 18, Color(40, 40, 40, m_parent->m_alpha));
+			auto height = ui::size( ui::font( ), "Copy").m_width + 2 + ui::size( ui::font( ), "Paste").m_width;
+			ui::rect_filled(p.x + m_w - COLORPICKER_WIDTH + 1, p.y + 10, height + 18, 20, Color(60, 60, 60, m_parent->m_alpha));
+			ui::rect_filled(p.x + m_w - COLORPICKER_WIDTH + 2, p.y + 11, height + 16, 18, Color(40, 40, 40, m_parent->m_alpha));
 
-			render::menu.string(p.x + 161, p.y + 13, Color(205, 205, 205, m_parent->m_alpha), XOR("Copy /"));
-			render::menu.string(p.x + 161 + render::menu.size("Copy").m_width + 5, p.y + 13, Color(205, 205, 205, m_parent->m_alpha), XOR("  Paste"));
+			ui::string( ui::font( ), p.x + 161, p.y + 13, Color(205, 205, 205, m_parent->m_alpha), XOR("Copy /"));
+			ui::string( ui::font( ), p.x + 161 + ui::size( ui::font( ), "Copy").m_width + 5, p.y + 13, Color(205, 205, 205, m_parent->m_alpha), XOR("  Paste"));
 		}
 
 		/* reset animation */
@@ -354,7 +354,7 @@ void Colorpicker::think() {
 
 	if (copy_paste) {
 		for (int i = 0; i < 2; i++) {
-			Rect textarea{ p.x + m_w - COLORPICKER_WIDTH + 1 * (i + 1) + (render::menu.size("Copy").m_width * i), p.y + 2, render::menu.size(XOR("Paste")).m_width + 5, render::menu.size("Copy").m_width };
+			Rect textarea{ p.x + m_w - COLORPICKER_WIDTH + 1 * (i + 1) + (ui::size( ui::font( ), "Copy").m_width * i), p.y + 2, ui::size( ui::font( ), XOR("Paste")).m_width + 5, ui::size( ui::font( ), "Copy").m_width };
 			if (g_input.IsCursorInRect(textarea) && g_input.GetKeyPress(VK_LBUTTON)) {
 				// copy
 				if (i == 0) {

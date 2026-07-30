@@ -22,8 +22,11 @@ void Hooks::LockCursor( ) {
 		// un-lock the cursor.
 		g_csgo.m_surface->UnlockCursor( );
 
-		// disable input.
-		g_csgo.m_input_system->EnableInput( false );
+		// keep input alive so the player can still walk / jump / duck with the
+		// menu up. the mouse look is undone in Hooks::CreateMove and the attack
+		// buttons are stripped in Client::EndMove.
+		// only kill it outright while a widget is eating keystrokes.
+		g_csgo.m_input_system->EnableInput( !g_gui.IsCapturingKeys( ) );
 	}
 
 	else {

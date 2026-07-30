@@ -17,10 +17,10 @@ private:
 	using bounces_t = std::vector< bounce_t >;
 
 private:
-	int       m_id;
+	int       m_id, m_damage;
 	path_t    m_path;
 	bounces_t m_bounces;
-	float     m_vel, m_power;
+	float     m_vel, m_power, m_feet;
 	vec3_t    m_start, m_velocity, m_move;
 
 public:

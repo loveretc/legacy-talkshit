@@ -1,17 +1,17 @@
 #include "includes.h"
 
 void MultiDropdown::arrow1( Point p ) {
-	render::rect_filled(p.x + m_w - 11, p.y - 2 + m_offset + 9, 5, 1, { 0,0,0, m_parent->m_alpha });
-	render::rect_filled(p.x + m_w - 11, p.y - 1 + m_offset + 9, 5, 1, { 152, 152, 152, m_parent->m_alpha });
-	render::rect_filled(p.x + m_w - 10, p.y - 1 + m_offset + 9 + 1, 3, 1, { 152, 152, 152, m_parent->m_alpha });
-	render::rect_filled(p.x + m_w - 9, p.y - 1 + m_offset + 9 + 2, 1, 1, { 152, 152, 152, m_parent->m_alpha });
+	ui::rect_filled(p.x + m_w - 11, p.y - 2 + m_offset + 9, 5, 1, { 0,0,0, m_parent->m_alpha });
+	ui::rect_filled(p.x + m_w - 11, p.y - 1 + m_offset + 9, 5, 1, { 152, 152, 152, m_parent->m_alpha });
+	ui::rect_filled(p.x + m_w - 10, p.y - 1 + m_offset + 9 + 1, 3, 1, { 152, 152, 152, m_parent->m_alpha });
+	ui::rect_filled(p.x + m_w - 9, p.y - 1 + m_offset + 9 + 2, 1, 1, { 152, 152, 152, m_parent->m_alpha });
 }
 
 void MultiDropdown::arrow2( Point l ) {
-	render::rect_filled(l.x + m_w - 11, l.y - 2 + m_offset + 9, 5, 1, { 0,0,0, m_parent->m_alpha });
-	render::rect_filled(l.x + m_w - 11, l.y - 1 + m_offset + 9, 5, 1, { 152, 152, 152, m_parent->m_alpha });
-	render::rect_filled(l.x + m_w - 10, l.y - 1 + m_offset + 9 + 1, 3, 1, { 152, 152, 152, m_parent->m_alpha });
-	render::rect_filled(l.x + m_w - 9, l.y - 1 + m_offset + 9 + 2, 1, 1, { 152, 152, 152, m_parent->m_alpha });
+	ui::rect_filled(l.x + m_w - 11, l.y - 2 + m_offset + 9, 5, 1, { 0,0,0, m_parent->m_alpha });
+	ui::rect_filled(l.x + m_w - 11, l.y - 1 + m_offset + 9, 5, 1, { 152, 152, 152, m_parent->m_alpha });
+	ui::rect_filled(l.x + m_w - 10, l.y - 1 + m_offset + 9 + 1, 3, 1, { 152, 152, 152, m_parent->m_alpha });
+	ui::rect_filled(l.x + m_w - 9, l.y - 1 + m_offset + 9 + 2, 1, 1, { 152, 152, 152, m_parent->m_alpha });
 }
 
 void MultiDropdown::draw( ) {
@@ -25,17 +25,17 @@ void MultiDropdown::draw( ) {
 
 	// draw label.
 	if( m_use_label )
-		render::menu.string( p.x + LABEL_OFFSET, p.y - 2, { 205, 205, 205, m_parent->m_alpha }, m_label );
+		ui::string( ui::font( ), p.x + LABEL_OFFSET, p.y - 2, { 205, 205, 205, m_parent->m_alpha }, m_label );
 
 	// draw border.
-	render::rect(p.x + DROPDOWN_X_OFFSET, p.y + m_offset, m_w - DROPDOWN_X_OFFSET, DROPDOWN_BOX_HEIGHT, { 15,15,15, m_parent->m_alpha });
+	ui::rect(p.x + DROPDOWN_X_OFFSET, p.y + m_offset, m_w - DROPDOWN_X_OFFSET, DROPDOWN_BOX_HEIGHT, { 15,15,15, m_parent->m_alpha });
 
 	// draw inside.
 	if (g_input.IsCursorInRect(bar) || m_open) {
-		render::gradient2(p.x + DROPDOWN_X_OFFSET + 1, p.y + m_offset + 1, m_w - DROPDOWN_X_OFFSET - 2, DROPDOWN_BOX_HEIGHT - 2, { 46, 46, 46, m_parent->m_alpha }, { 51, 51, 51, m_parent->m_alpha });
+		ui::gradient2(p.x + DROPDOWN_X_OFFSET + 1, p.y + m_offset + 1, m_w - DROPDOWN_X_OFFSET - 2, DROPDOWN_BOX_HEIGHT - 2, { 46, 46, 46, m_parent->m_alpha }, { 51, 51, 51, m_parent->m_alpha });
 	}
 	else {
-		render::gradient2(p.x + DROPDOWN_X_OFFSET + 1, p.y + m_offset + 1, m_w - DROPDOWN_X_OFFSET - 2, DROPDOWN_BOX_HEIGHT - 2, { 36, 36, 36, m_parent->m_alpha }, { 41, 41, 41, m_parent->m_alpha });
+		ui::gradient2(p.x + DROPDOWN_X_OFFSET + 1, p.y + m_offset + 1, m_w - DROPDOWN_X_OFFSET - 2, DROPDOWN_BOX_HEIGHT - 2, { 36, 36, 36, m_parent->m_alpha }, { 41, 41, 41, m_parent->m_alpha });
 	}
 
 	// arrow.
@@ -48,10 +48,10 @@ void MultiDropdown::draw( ) {
 		if( m_open ) {
 
 			// draw items outline.
-			render::rect( p.x + DROPDOWN_X_OFFSET, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_SEPARATOR, m_w - DROPDOWN_X_OFFSET, m_anim_height + 1, { 0, 0, 0, m_parent->m_alpha } );
+			ui::rect( p.x + DROPDOWN_X_OFFSET, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_SEPARATOR, m_w - DROPDOWN_X_OFFSET, m_anim_height + 1, { 0, 0, 0, m_parent->m_alpha } );
 
 			// draw items inside.
-			render::rect_filled( p.x + DROPDOWN_X_OFFSET + 1, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_SEPARATOR + 1, m_w - DROPDOWN_X_OFFSET - 2, m_anim_height - 1, { 41, 41, 41, m_parent->m_alpha } );
+			ui::rect_filled( p.x + DROPDOWN_X_OFFSET + 1, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_SEPARATOR + 1, m_w - DROPDOWN_X_OFFSET - 2, m_anim_height - 1, { 41, 41, 41, m_parent->m_alpha } );
 
 			// iterate items.
 			for( size_t i{}; i < m_items.size( ); ++i ) {
@@ -65,12 +65,12 @@ void MultiDropdown::draw( ) {
 					bool active = std::find( m_active_items.begin( ), m_active_items.end( ), i ) != m_active_items.end( );
 
 					if (active)
-						render::menu_shade.string(p.x + DROPDOWN_X_OFFSET + DROPDOWN_ITEM_X_OFFSET, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_ITEM_Y_OFFSET + item_offset, color, m_items[i]);
+						ui::string( ui::font_bold( ), p.x + DROPDOWN_X_OFFSET + DROPDOWN_ITEM_X_OFFSET, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_ITEM_Y_OFFSET + item_offset, color, m_items[i]);
 					else
-						render::menu.string(p.x + DROPDOWN_X_OFFSET + DROPDOWN_ITEM_X_OFFSET, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_ITEM_Y_OFFSET + item_offset, Color{ 152, 152, 152, m_parent->m_alpha }, m_items[i]);
+						ui::string( ui::font( ), p.x + DROPDOWN_X_OFFSET + DROPDOWN_ITEM_X_OFFSET, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_ITEM_Y_OFFSET + item_offset, Color{ 152, 152, 152, m_parent->m_alpha }, m_items[i]);
 
 					// yet again, it won't use list init inside the ternary conditional.
-					//render::menu_shade.string( p.x + DROPDOWN_X_OFFSET + DROPDOWN_ITEM_X_OFFSET, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_ITEM_Y_OFFSET + item_offset,
+					//ui::string( ui::font_bold( ), p.x + DROPDOWN_X_OFFSET + DROPDOWN_ITEM_X_OFFSET, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_ITEM_Y_OFFSET + item_offset,
 						//active ? color : Color{ 152, 152, 152, m_parent->m_alpha },
 									 //m_items[ i ] );
 				}
@@ -79,12 +79,12 @@ void MultiDropdown::draw( ) {
 
 		// no items.
 		if( !m_active_items.size( ) )
-			render::menu.string( p.x + DROPDOWN_X_OFFSET + DROPDOWN_ITEM_X_OFFSET, 
+			ui::string( ui::font( ), p.x + DROPDOWN_X_OFFSET + DROPDOWN_ITEM_X_OFFSET, 
 								   p.y + m_offset + 4, { 152, 152, 152, m_parent->m_alpha }, XOR( "-" ) );
 
 		// one item.
 		else if( m_active_items.size( ) == 1 )
-			render::menu.string( p.x + DROPDOWN_X_OFFSET + DROPDOWN_ITEM_X_OFFSET, 
+			ui::string( ui::font( ), p.x + DROPDOWN_X_OFFSET + DROPDOWN_ITEM_X_OFFSET, 
 								 p.y + m_offset + 4, { 152, 152, 152, m_parent->m_alpha }, m_items[ m_active_items.front( ) ] );
 
 		// more then one item.
@@ -102,7 +102,7 @@ void MultiDropdown::draw( ) {
 				tmp << item;
 
 				// does it still fit in?
-				if( render::menu.size( tmp.str( ) + XOR( "..." ) ).m_width >= ( m_w - DROPDOWN_X_OFFSET - DROPDOWN_ITEM_X_OFFSET - 10 ) ) {
+				if( ui::size( ui::font( ), tmp.str( ) + XOR( "..." ) ).m_width >= ( m_w - DROPDOWN_X_OFFSET - DROPDOWN_ITEM_X_OFFSET - 10 ) ) {
 					ss << XOR( "..." );
 					break;
 				}
@@ -113,7 +113,7 @@ void MultiDropdown::draw( ) {
 				ss << item;
 			}
 
-			render::menu.string( p.x + DROPDOWN_X_OFFSET + DROPDOWN_ITEM_X_OFFSET, p.y + m_offset + 4, { 152, 152, 152, m_parent->m_alpha }, ss.str( ) );
+			ui::string( ui::font( ), p.x + DROPDOWN_X_OFFSET + DROPDOWN_ITEM_X_OFFSET, p.y + m_offset + 4, { 152, 152, 152, m_parent->m_alpha }, ss.str( ) );
 		}
 	}
 }

@@ -97,21 +97,32 @@ void Client::DrawHUD( ) {
 	Color col = g_menu.main.misc.menu_color.get();
 
 	std::string text = tfm::format(XOR("talkshit %s | %s | %i fps | %s"), build, buffer, FrameRate(), time.str().data());
-	render::FontSize_t size = render::hud.size(text);
+
+	// the font is already scaled, so size comes back in real px - only the fixed
+	// paddings need px( ).
+	render::FontSize_t size = ui::font_hud().size(text);
 
 	// outline.
-	render::rect_filled(g_cl.m_width - size.m_width - 23, 5, size.m_width + 15, size.m_height + 12, { 5, 5, 5, alpha });
-	render::rect_filled(g_cl.m_width - size.m_width - 22, 6, size.m_width + 13, size.m_height + 10, { 45, 45, 45, alpha });
+	render::rect_filled(g_cl.m_width - size.m_width - ui::px(23), ui::px(5), size.m_width + ui::px(15), size.m_height + ui::px(12), { 5, 5, 5, alpha });
+	render::rect_filled(g_cl.m_width - size.m_width - ui::px(22), ui::px(6), size.m_width + ui::px(13), size.m_height + ui::px(10), { 45, 45, 45, alpha });
 
 	// box.
-	render::rect_filled(g_cl.m_width - size.m_width - 21, 7, size.m_width + 11, size.m_height + 8, { 24, 24, 24, alpha });
+	render::rect_filled(g_cl.m_width - size.m_width - ui::px(21), ui::px(7), size.m_width + ui::px(11), size.m_height + ui::px(8), { 24, 24, 24, alpha });
 
 	// line.
-	render::rect_filled(g_cl.m_width - size.m_width - 20, 8, size.m_width + 9, size.m_height - 12, Color(col.r(), col.g(), col.b(), alpha));
-	render::rect_filled(g_cl.m_width - size.m_width - 20, 9, size.m_width + 9, size.m_height - 12, Color(col.r(), col.g(), col.b(), low_alpha));
+	render::rect_filled(g_cl.m_width - size.m_width - ui::px(20), ui::px(8), size.m_width + ui::px(9), size.m_height - ui::px(12), Color(col.r(), col.g(), col.b(), alpha));
+	render::rect_filled(g_cl.m_width - size.m_width - ui::px(20), ui::px(9), size.m_width + ui::px(9), size.m_height - ui::px(12), Color(col.r(), col.g(), col.b(), low_alpha));
 
 	// text.
-	render::hud.string(g_cl.m_width - 15, 12, { 186, 186, 186, alpha }, text, render::ALIGN_RIGHT);
+	ui::font_hud().string(g_cl.m_width - ui::px(15), ui::px(12), { 186, 186, 186, alpha }, text, render::ALIGN_RIGHT);
+}
+
+int Client::WatermarkBottom() {
+	// the watermark's outer box starts at y = 5 and is ( line height + 12 ) tall.
+	// it is always a single line, so the cached line height of the font is enough
+	// to know where it ends - no need to rebuild its text or cache a rect, which
+	// would drag in frame-ordering or FrameRate( )'s side effect.
+	return ui::px(5) + ui::font_hud().m_size.m_height + ui::px(12);
 }
 
 void Client::Clantag() {
@@ -206,6 +217,9 @@ void Client::OnPaint() {
 	// update screen size.
 	g_csgo.m_engine->GetScreenSize(m_width, m_height);
 
+	// resolve the interface scale for this frame before anything measures or
+	// draws with it - the status indicators and the menu both depend on it.
+	ui::think();
 
 	// render stuff.
 	g_visuals.think();
@@ -468,6 +482,12 @@ void Client::DoMove() {
 void Client::EndMove(CUserCmd* cmd) {
 
 	OnCreateMove();
+
+	// the player's own clicks are already gone ( Hooks::CreateMove strips them
+	// before prediction runs ). this only catches attacks the tick injected by
+	// itself afterwards, like revolver cocking.
+	if (g_gui.m_open)
+		cmd->m_buttons &= ~(IN_ATTACK | IN_ATTACK2);
 
 	// store this when choke cycle reset.
 	if (!g_csgo.m_cl->m_choked_commands) {

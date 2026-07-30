@@ -55,6 +55,7 @@ protected:
 	Callback_t                    m_callback;
 	bool			              m_show;
 	bool                          m_use_label;
+	
 
 public:
 	__forceinline Element( ) : m_pos{}, m_w{}, m_h{}, m_base_h{}, m_parent{ nullptr },

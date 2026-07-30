@@ -42,6 +42,7 @@ void Grenades::paint() {
 
 		if ( render::WorldToScreen( prev, screen0 ) && render::WorldToScreen( m_path[ i ], screen1 ) ) {
 			Color col = g_menu.main.visuals.tracers_color.get( );
+			Color col_hit = g_menu.main.visuals.tracers_color_hit.get();
 
 			ang_t trajectory_angles;
 			vec3_t ang_orientation = ( prev - m_path[ i ] );
@@ -53,7 +54,14 @@ void Grenades::paint() {
 			vec3_t mins = vec3_t( 0.f, -thickness, -thickness );
 			vec3_t maxs = vec3_t( ang_orientation.length( ), thickness, thickness );
 
-			render::line(screen0, screen1, col);
+			if ((m_id == FIREBOMB) || (m_id == MOLOTOV))
+				render::line(screen0, screen1, (m_feet < 5.5f && m_feet > 0.1f) ? col_hit : col);
+			else if (m_id == HEGRENADE)
+				render::line(screen0, screen1, m_damage >= 1 ? col_hit : col);
+			else
+				render::line(screen0, screen1, col);
+
+			//render::line(screen0, screen1, m_damage >= 1 ? col_hit : col);
 			// render::r_add_glow_box( m_path[ i ], trajectory_angles, mins, maxs, col, 3.f * g_csgo.m_globals->m_frametime );
 
 			if ( i == m_path.size( ) - 1 ) {
@@ -136,6 +144,10 @@ void Grenades::paint() {
 	if (target.second) {
 		vec2_t screen;
 
+
+		//line color
+		m_damage = target.first;
+
 		// replace the last bounce with green.
 		if (!m_bounces.empty())
 			m_bounces.back().color = { 75, 220, 50, 255 };
@@ -147,7 +159,7 @@ void Grenades::paint() {
 
 				const float flMeters = flDistance * 0.0254f;
 				const float flFeet = flMeters * 3.281f;
-
+				m_feet = flFeet; //for line color
 				char distance_buf[128] = { };
 				sprintf(distance_buf, XOR("%.1f ft"), flFeet);
 
@@ -157,15 +169,19 @@ void Grenades::paint() {
 				else
 					molly_col = { 150, 200, 60, 180 };
 
-				render::menu_shade.string(screen.x, screen.y + 5, molly_col, distance_buf, render::ALIGN_CENTER);
+				ui::font_bold().string(screen.x, screen.y + ui::px(5), molly_col, distance_buf, render::ALIGN_CENTER);
 			}
 
 		}
 
 		if (m_id == HEGRENADE) {
 			if (render::WorldToScreen(prev, screen))
-				render::menu_shade.string(screen.x, screen.y + 5, dumbo_dagadt, tfm::format(XOR("%i"), (int)target.first) + " dmg", render::ALIGN_CENTER);
+				ui::font_bold().string(screen.x, screen.y + ui::px(5), dumbo_dagadt, tfm::format(XOR("%i"), (int)target.first) + " dmg", render::ALIGN_CENTER);
 		}
+	}
+	else {
+		m_damage = 0;
+		m_feet = 0;
 	}
 
 	// render bounces.
@@ -173,7 +189,7 @@ void Grenades::paint() {
 		vec2_t screen;
 
 		if (render::WorldToScreen(b.point, screen))
-			render::circle(screen.x + 1, screen.y, 2, 12, b.color);
+			render::circle(screen.x + ui::px(1), screen.y, ui::px(2), 12, b.color);
 	}
 }
 
